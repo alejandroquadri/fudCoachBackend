@@ -1,0 +1,5 @@
+{
+  "watch": false,
+  "ext": "js",
+  "exec": "node dist/index.js"
+}
