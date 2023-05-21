@@ -1,5 +1,8 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+
+import Mongo from './connection';
+
 import UserRoutes from './routes/UserRoutes';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -10,8 +13,10 @@ class App {
 
   constructor() {
     this.app = express();
+    // this.mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017';
     this.userRoutes = new UserRoutes();
     this.initializeMiddlewares();
+    this.connect();
     this.initializeRoutes();
   }
 
@@ -31,6 +36,12 @@ class App {
     this.app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
+  }
+
+  async connect() {
+    await Mongo.connect().catch((err: any) =>
+      console.log('error en mongo', err)
+    );
   }
 }
 
