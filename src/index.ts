@@ -13,7 +13,6 @@ class App {
 
   constructor() {
     this.app = express();
-    // this.mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017';
     this.userRoutes = new UserRoutes();
     this.initializeMiddlewares();
     this.connect();
