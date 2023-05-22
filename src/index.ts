@@ -3,16 +3,18 @@ import cors from 'cors';
 
 import Mongo from './connection';
 
-import UserRoutes from './routes/UserRoutes';
+import { UserRoutes, LangChTest } from './routes';
 import dotenv from 'dotenv';
 dotenv.config();
 
 class App {
   private app: Application;
+  private langChTestRoutes: LangChTest;
   private userRoutes: UserRoutes;
 
   constructor() {
     this.app = express();
+    this.langChTestRoutes = new LangChTest();
     this.userRoutes = new UserRoutes();
     this.initializeMiddlewares();
     this.connect();
@@ -26,8 +28,9 @@ class App {
 
   private initializeRoutes(): void {
     this.app.get('/', (req: Request, res: Response) => {
-      res.send('Hello, cruel World!');
+      res.send('Hello, cruel nice World!');
     });
+    this.app.use('/ai', this.langChTestRoutes.getRouter());
     this.app.use('/users', this.userRoutes.getRouter());
   }
 
