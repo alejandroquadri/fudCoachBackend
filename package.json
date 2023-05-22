@@ -10,7 +10,8 @@
     "build": "webpack --config webpack.config.js",
     "preinstall": "nvm use",
     "prebuild": "nvm use",
-    "run:build": "nodemon --config nodemon.json"
+    "run:build": "nodemon --config nodemon.json",
+    "deploy": "git push heroku"
   },
   "author": "Alejandro Quadri",
   "license": "ISC",

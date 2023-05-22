@@ -2,7 +2,10 @@ import { MongoClient } from 'mongodb';
 
 class Mongo {
   public client: any;
-  uri = 'mongodb+srv://quadri:EPQuadri384@quadrierp.weme9.mongodb.net/test';
+  // MONGODB_URI=mongodb://<username>:<password>@<cluster-address>/<database-name>
+
+  uri =
+    'mongodb+srv://alejandroquadri:EPQuadri384@cluster0.lsaoaqz.mongodb.net/?retryWrites=true&w=majority';
 
   public async connect() {
     this.client = await MongoClient.connect(this.uri);
