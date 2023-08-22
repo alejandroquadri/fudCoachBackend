@@ -17,7 +17,7 @@ class App {
     this.langChTestRoutes = new LangChTest();
     this.userRoutes = new UserRoutes();
     this.initializeMiddlewares();
-    this.connect();
+    // this.connect(); //para conectar a una BD mongo
     this.initializeRoutes();
   }
 

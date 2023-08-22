@@ -2,14 +2,12 @@
   "name": "nodeApiStarter",
   "version": "1.0.0",
   "description": "Node Express API starter",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node dist/index.js",
     "dev": "nodemon",
     "build": "webpack --config webpack.config.js",
-    "preinstall": "nvm use",
-    "prebuild": "nvm use",
     "run:build": "nodemon --config nodemon.json",
     "deploy": "git push heroku"
   },
@@ -35,7 +33,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
-    "langchain": "^0.0.78",
+    "langchain": "^0.0.132",
     "mongodb": "^5.5.0"
   }
 }
