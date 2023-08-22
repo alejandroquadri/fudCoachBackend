@@ -1,15 +1,23 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import express, { Router, Request, Response } from 'express';
 
-// import { OpenAI } from 'langchain/llms/openai';
-const { OpenAI } = require('langchain/llms/openai');
-const { PromptTemplate } = require('langchain/prompts');
-const { LLMChain, ConversationChain } = require('langchain/chains');
-const { SerpAPI } = require('langchain/tools');
-const { Calculator } = require('langchain/tools/calculator');
-const { initializeAgentExecutorWithOptions } = require('langchain/agents');
-const { BufferMemory } = require('langchain/memory');
-const { ChatOpenAI } = require('langchain/chat_models/openai');
+// const { OpenAI } = require('langchain/llms/openai');
+// const { PromptTemplate } = require('langchain/prompts');
+// const { LLMChain, ConversationChain } = require('langchain/chains');
+// const { SerpAPI } = require('langchain/tools');
+// const { Calculator } = require('langchain/tools/calculator');
+// const { initializeAgentExecutorWithOptions } = require('langchain/agents');
+// const { BufferMemory } = require('langchain/memory');
+// const { ChatOpenAI } = require('langchain/chat_models/openai');
+
+import { OpenAI } from 'langchain/llms/openai';
+import { PromptTemplate } from 'langchain/prompts';
+import { LLMChain, ConversationChain } from 'langchain/chains';
+import { SerpAPI } from 'langchain/tools';
+import { Calculator } from 'langchain/tools/calculator';
+import { initializeAgentExecutorWithOptions } from 'langchain/agents';
+import { BufferMemory } from 'langchain/memory';
+import { ChatOpenAI } from 'langchain/chat_models/openai';
 
 export class LangChTest {
   private router: Router = express.Router();
