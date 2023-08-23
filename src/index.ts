@@ -1,5 +1,6 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+import { auth } from 'express-oauth2-jwt-bearer';
 
 import Mongo from './connection';
 
@@ -11,6 +12,11 @@ class App {
   private app: Application;
   private langChTestRoutes: LangChTest;
   private userRoutes: UserRoutes;
+
+  private checkJwt = auth({
+    issuerBaseURL: process.env.AUTHO_ISSUER_BASE_URL,
+    audience: process.env.AUTHO_AUDIENCE,
+  });
 
   constructor() {
     this.app = express();
@@ -24,13 +30,26 @@ class App {
   private initializeMiddlewares(): void {
     this.app.use(express.json());
     this.app.use(cors());
+
+    // Error handling for JWT validation
+    this.app.use((err: any, req: any, res: any, next: any) => {
+      if (err.name === 'UnauthorizedError') {
+        res.status(401).send('Invalid token, or no token supplied!');
+      } else {
+        next(err);
+      }
+    });
   }
+  // private initializeMiddlewares(): void {
+  //   this.app.use(express.json());
+  //   this.app.use(cors());
+  // }
 
   private initializeRoutes(): void {
     this.app.get('/', (req: Request, res: Response) => {
       res.send('Hello, cruel nice World!');
     });
-    this.app.use('/ai', this.langChTestRoutes.getRouter());
+    this.app.use('/ai', this.checkJwt, this.langChTestRoutes.getRouter());
     this.app.use('/users', this.userRoutes.getRouter());
   }
 
