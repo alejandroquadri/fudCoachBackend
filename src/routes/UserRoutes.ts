@@ -1,5 +1,6 @@
 import express, { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import Mongo from '../connection';
 
 export class UserRoutes {
@@ -13,7 +14,7 @@ export class UserRoutes {
     this.router.get('/', this.getUsers);
     this.router.get('/:id', this.getUserById);
     this.router.post('/signup', this.signup);
-    this.router.post('/signin', this.signin);
+    this.router.post('/login', this.login);
   }
 
   private getUsers(req: Request, res: Response): void {
@@ -36,7 +37,7 @@ export class UserRoutes {
       const { email, name, password } = req.body;
       console.log(email, password);
       // Hash the password
-      const client = await Mongo.client;
+      const client = Mongo.client;
       const emailExists = await client
         .db(process.env.DB_NAME)
         .collection('users')
@@ -56,18 +57,17 @@ export class UserRoutes {
         .insertOne({ email, name, password: hashedPassword });
       console.log(user);
       res.status(201).send(user);
-      client.close();
+      // client.close();
     } catch (error) {
       console.log('es error', error);
       res.status(400).send(error);
     }
   }
 
-  private async signin(req: Request, res: Response): Promise<any> {
+  private async login(req: Request, res: Response): Promise<any> {
     try {
       const { email, password } = req.body;
-
-      const client = await Mongo.client;
+      const client = Mongo.client;
       const user = await client
         .db(process.env.DB_NAME)
         .collection('users')
@@ -83,9 +83,16 @@ export class UserRoutes {
         res.status(400).send({ error: 'Invalid credentials' });
         return;
       }
+      const token = jwt.sign(
+        { id: user._id },
+        process.env.JWT_SECRET || 'secret',
+        {
+          expiresIn: 86400, // expires in 24 hours
+        }
+      );
 
-      res.send(user);
-      client.close();
+      res.status(200).send({ auth: true, user, token });
+      // client.close();
     } catch (error) {
       res.status(500).send(error);
     }
