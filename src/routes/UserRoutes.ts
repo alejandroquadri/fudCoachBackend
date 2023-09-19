@@ -12,9 +12,9 @@ export class UserRoutes {
 
   private initializeRoutes(): void {
     this.router.get('/', this.getUsers);
-    this.router.get('/:id', this.getUserById);
     this.router.post('/signup', this.signup);
     this.router.post('/login', this.login);
+    this.router.get('/:id', this.getUserById);
   }
 
   private getUsers(req: Request, res: Response): void {
@@ -35,7 +35,6 @@ export class UserRoutes {
   private async signup(req: Request, res: Response): Promise<void> {
     try {
       const { email, name, password } = req.body;
-      console.log(email, password);
       // Hash the password
       const client = Mongo.client;
       const emailExists = await client

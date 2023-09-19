@@ -46,7 +46,7 @@ class App {
               .db(process.env.DB_NAME)
               .collection('users')
               .findOne({ _id });
-            console.log(jwtPayload.id, user);
+            // console.log(jwtPayload.id, user);
             if (user) {
               return done(null, user);
             } else {
