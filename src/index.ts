@@ -6,7 +6,7 @@ import { Strategy as JWTStrategy, ExtractJwt } from 'passport-jwt';
 import { ObjectId } from 'mongodb';
 import Mongo from './connection';
 
-import { UserRoutes, LangChTest } from './routes';
+import { UserRoutes, LangChTest, CoachRoutes } from './routes';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -14,12 +14,14 @@ class App {
   private app: Application;
   private langChTestRoutes: LangChTest;
   private userRoutes: UserRoutes;
+  private coachRoutes: CoachRoutes;
   private db: any;
 
   constructor() {
     this.app = express();
     this.langChTestRoutes = new LangChTest();
     this.userRoutes = new UserRoutes();
+    this.coachRoutes = new CoachRoutes();
     this.initializeMiddlewares();
     this.connect();
     this.initializePassport();
@@ -69,6 +71,11 @@ class App {
       '/ai',
       passport.authenticate('jwt', { session: false }),
       this.langChTestRoutes.getRouter()
+    );
+    this.app.use(
+      '/coach',
+      passport.authenticate('jwt', { session: false }),
+      this.coachRoutes.getRouter()
     );
     this.app.use('/users', this.userRoutes.getRouter());
   }

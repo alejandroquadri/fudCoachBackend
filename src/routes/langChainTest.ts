@@ -9,12 +9,13 @@ import {
   SystemMessagePromptTemplate,
 } from 'langchain/prompts';
 import { LLMChain, ConversationChain } from 'langchain/chains';
-import { SerpAPI } from 'langchain/tools';
+import { DynamicTool, SerpAPI } from 'langchain/tools';
 import { Calculator } from 'langchain/tools/calculator';
 import { initializeAgentExecutorWithOptions } from 'langchain/agents';
-import { BufferMemory } from 'langchain/memory';
+import { BufferMemory, ChatMessageHistory } from 'langchain/memory';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ConversationSummaryBufferMemory } from 'langchain/memory';
+import { AIMessage, HumanMessage } from 'langchain/schema';
 
 export class LangChTest {
   private router: Router = express.Router();
@@ -57,6 +58,7 @@ export class LangChTest {
     this.router.post('/chatMem', this.chatMemExample);
     this.router.post('/chat', this.chat);
     this.router.post('/chatAgent', this.chatAgent);
+    this.router.post('/customChatAgent', this.customChatAgent);
   }
 
   public getRouter(): Router {
@@ -66,6 +68,55 @@ export class LangChTest {
   private aiRouteTest(req: Request, res: Response): void {
     res.send('Ai working well');
   }
+
+  private customChatAgent = async (req: Request, res: Response) => {
+    const { message } = req.body;
+    try {
+      const previousMessages = [
+        new HumanMessage('My name is Bob'),
+        new AIMessage('Nice to meet you, Bob!'),
+      ];
+
+      const chatHistory = new ChatMessageHistory(previousMessages);
+      this.agentChatPromptMemory.chatHistory = chatHistory;
+
+      const tools = [
+        new Calculator(),
+        new DynamicTool({
+          name: 'WeightLogs',
+          description:
+            'call this each time the user provides a new weight log. The input should be the number in kg of the new weight log',
+          func: async w => {
+            try {
+              console.log(w);
+              return 'Weigh was logged';
+            } catch (error) {
+              return 'There was an error logging your new weight log';
+            }
+          },
+        }),
+      ];
+
+      const executor = await initializeAgentExecutorWithOptions(
+        tools,
+        this.model,
+        {
+          agentType: 'openai-functions',
+          memory: this.agentChatPromptMemory,
+          returnIntermediateSteps: true,
+          agentArgs: {
+            prefix: `Do your best to answer the questions. Feel free to use any tools available to look up relevant information, only if necessary.`,
+          },
+        }
+      );
+      const answer = await executor.call({ input: message });
+      console.log(answer);
+      res.status(200).json({ answer });
+    } catch (error) {
+      console.log(error);
+      res.status(500).send('Internal Server Error');
+    }
+  };
 
   private chatAgent = async (req: Request, res: Response) => {
     const { message } = req.body;

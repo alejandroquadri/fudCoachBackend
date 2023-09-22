@@ -1,2 +1,3 @@
-export * from './userRoutes';
+export * from './user.routes';
 export * from './langChainTest';
+export * from './coach.routes';
