@@ -19,7 +19,7 @@
     "dotenv": "^16.0.3",
     "jsonwebtoken": "^9.0.1",
     "langchain": "^0.0.151",
-    "mongodb": "^5.5.0",
+    "mongodb": "^6.1.0",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
     "serialijse": "^0.3.0"

@@ -6,16 +6,24 @@ import {
 } from 'langchain/memory';
 import { AIMessage, HumanMessage } from 'langchain/schema';
 import { DynamicTool } from 'langchain/tools';
+import { MongoDBChatMessageHistory } from 'langchain/stores/message/mongodb';
 
-import { ChatMsg } from '../types';
+import { AiChatAnswer, ChatMsg } from '../types';
+import { AiModel } from '../models';
+import { mongoInstance } from '../connection';
 
 export class AiService {
+  aiModel: AiModel;
   model: ChatOpenAI = new ChatOpenAI({
     modelName: 'gpt-4',
     // modelName: 'gpt-3.5-turbo',
     temperature: 0.9,
     // verbose: true,
   });
+
+  constructor() {
+    this.aiModel = new AiModel();
+  }
 
   getChatPromptMemory = (
     history?: ChatMessageHistory
@@ -35,10 +43,10 @@ export class AiService {
   ): (HumanMessage | AIMessage)[] => {
     const history: (HumanMessage | AIMessage)[] = [];
     messages.forEach(msg => {
-      if (msg.type === 'ai') {
+      if (msg.sender === 'ai') {
         history.push(new AIMessage(msg.content));
       }
-      if (msg.type === 'user') {
+      if (msg.sender === 'user') {
         history.push(new HumanMessage(msg.content));
       }
     });
@@ -60,14 +68,19 @@ export class AiService {
       },
     });
 
-  getAiResponse = async (message: string, history?: Array<ChatMsg>) => {
-    let chatHistory;
-    if (history) {
-      const previousMessages = this.buildChatHistory(history);
-      chatHistory = new ChatMessageHistory(previousMessages);
-    }
-
-    const agentChatPromptMemory = this.getChatPromptMemory(chatHistory);
+  getAiResponse = async (
+    message: string,
+    userId: string
+  ): Promise<AiChatAnswer> => {
+    const chatHistoryCollection = mongoInstance.db.collection('chatHistory');
+    const mongoChatHistory = new MongoDBChatMessageHistory({
+      collection: chatHistoryCollection,
+      sessionId: userId,
+    });
+    const existingHistory = await mongoChatHistory.getMessages();
+    const agentChatPromptMemory = this.getChatPromptMemory(
+      new ChatMessageHistory(existingHistory)
+    );
 
     const tools = [this.wheightTool()];
 
@@ -84,10 +97,55 @@ export class AiService {
       }
     );
     const answer = await executor.call({ input: message });
-    console.log(answer);
-    return answer;
+    await mongoChatHistory.addMessage(new HumanMessage(message));
+    await mongoChatHistory.addMessage(new AIMessage(answer.output));
+    console.log('respuesta del ai desde ai service:', answer);
+    return answer as Promise<AiChatAnswer>;
   };
 }
+
+// getAiResponse = async (
+//   message: string,
+//   history?: Array<ChatMsg>
+// ): Promise<AiChatAnswer> => {
+//   let chatHistory;
+//   if (history) {
+//     const previousMessages = this.buildChatHistory(history);
+//     console.log('convertido para history', previousMessages);
+//     chatHistory = new ChatMessageHistory(previousMessages);
+//   }
+//   console.log('esto meto', chatHistory);
+//   const agentChatPromptMemory = this.getChatPromptMemory(chatHistory);
+
+//   const tools = [this.wheightTool()];
+
+//   const executor = await initializeAgentExecutorWithOptions(
+//     tools,
+//     this.model,
+//     {
+//       agentType: 'openai-functions',
+//       memory: agentChatPromptMemory,
+//       returnIntermediateSteps: true,
+//       agentArgs: {
+//         prefix: `Do your best to answer the questions. Feel free to use any tools available to look up relevant information, only if necessary.`,
+//       },
+//     }
+//   );
+//   const answer = await executor.call({ input: message });
+//   console.log('respuesta del ai desde ai service:', answer);
+//   return answer as Promise<AiChatAnswer>;
+// };
+
+// saveChatHistory = async (history: any, id: string) => {
+//   serialijse.declarePersistable(history);
+//   const historyJson: string = serialijse.serialize(history);
+//   console.log('termine de serializarahora guardo');
+//   return this.aiModel.saveChatHistory(historyJson, id);
+// };
+
+// getChatHistory = async (id: string) => {
+//   return this.aiModel.getChatHistory(id);
+// };
 
 // Op 1 para guardar mensajes en memoria
 

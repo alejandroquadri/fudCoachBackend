@@ -1,13 +1,13 @@
 import express, { Router, Request, Response } from 'express';
-import { AiController } from '../controllers';
+import { CoachController } from '../controllers';
 
 export class CoachRoutes {
   private router: Router = express.Router();
-  private aiController: AiController;
+  private aiController: CoachController;
 
   constructor() {
     this.initializeRoutes();
-    this.aiController = new AiController();
+    this.aiController = new CoachController();
   }
 
   private initializeRoutes = () => {
@@ -23,16 +23,24 @@ export class CoachRoutes {
     res.send('Coach routes Ok');
 
   private coachAnswer = async (req: Request, res: Response) => {
-    const { message } = req.body;
+    const { message, userId, chatHistory } = req.body;
     try {
-      if (!message && typeof message !== 'string') {
+      if (!message || !userId) {
+        throw new Error('missing message or user ID');
+      }
+      if (typeof message !== 'string') {
         throw new Error('message is not a string');
       }
-      const answer = await this.aiController.coachResponse(message);
-      res.status(200).json({ answer });
-    } catch (error) {
-      console.log(error);
-      res.status(500).send('Internal server error');
+      const answer = await this.aiController.coachResponse(
+        message,
+        userId,
+        chatHistory
+      );
+      res.status(200).json(answer);
+    } catch (error: unknown) {
+      const errorDesc =
+        error instanceof Error ? error.message : 'Internal server error';
+      res.status(500).json({ error: errorDesc });
     }
   };
 }
