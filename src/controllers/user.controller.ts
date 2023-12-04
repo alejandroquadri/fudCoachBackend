@@ -9,7 +9,6 @@ export class UserController {
 
   constructor() {
     this.userModel = new UserModel();
-    console.log('construyo user controller');
   }
 
   login = async (
