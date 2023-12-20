@@ -1,7 +1,7 @@
 import { UserModel } from '../models';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { User } from '../types';
+import { User, newProfile } from '../types';
 import { ObjectId } from 'mongodb';
 
 export class UserController {
@@ -30,7 +30,7 @@ export class UserController {
           { id: user._id },
           process.env.JWT_SECRET || 'secret',
           {
-            expiresIn: 86400, // expires in 24 hours
+            expiresIn: 86400, // expires in 24 hours. Esta en segundos no milisegundos
           }
         );
         const refreshToken = jwt.sign(
@@ -47,20 +47,35 @@ export class UserController {
 
   signUp = async (
     email: string,
-    name: string,
-    password: string
-  ): Promise<string | User | null> => {
+    password: string,
+    profile: newProfile
+  ): Promise<{ user: User; token: string; refreshToken: string }> => {
     const emailExists = await this.userModel.getUserByEmail(email);
     if (emailExists) {
-      return 'email taken';
+      throw new Error('email taken');
     }
     const hashedPassword = await bcrypt.hash(password, 8);
     const insertedData = await this.userModel.createUser(
       email,
-      name,
-      hashedPassword
+      hashedPassword,
+      profile
     );
-    return this.userModel.getUserById(insertedData.insertedId);
+    const id = insertedData.insertedId;
+    const token = jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
+      expiresIn: 86400, // expires in 24 hours. Esta en segundos no milisegundos
+    });
+    const refreshToken = jwt.sign(
+      { id },
+      process.env.REFRESH_TOKEN_SECRET || 'refresh_secret',
+      {
+        expiresIn: '7d', // expires in 7 days
+      }
+    );
+    const user = await this.getUserById(insertedData.insertedId.toHexString());
+    if (user === null) {
+      throw new Error('Error saving new user');
+    }
+    return { user, token, refreshToken };
   };
 
   getUserById = async (id: string | ObjectId) => {

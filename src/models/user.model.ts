@@ -1,18 +1,32 @@
 import bcrypt from 'bcryptjs';
-import { User } from '../types';
+import { User, newProfile } from '../types';
 import { mongoInstance } from '../connection';
 import { ObjectId } from 'mongodb';
 
 export class UserModel {
   createUser = async (
     email: string,
-    name: string,
-    password: string
+    password: string,
+    profile: newProfile
   ): Promise<{ acknowledged: boolean; insertedId: ObjectId }> => {
     const hashedPassword = await bcrypt.hash(password, 8);
-    return mongoInstance.db
-      .collection('users')
-      .insertOne({ email, name, password: hashedPassword });
+    return mongoInstance.db.collection('users').insertOne({
+      email,
+      password: hashedPassword,
+      name: profile.name,
+      weightLogs: [
+        {
+          weightLog: Number(profile.weight),
+          date: new Date(),
+        },
+      ],
+      weightUnit: profile.weightUnit,
+      height: profile.height,
+      heightUnit: profile.heightUnit,
+      birthday: profile.birthdate,
+      gender: profile.gender,
+      completedQA: false,
+    });
   };
 
   getUserByEmail = (email: string): Promise<User | null> => {

@@ -22,13 +22,17 @@ export class AiModel {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   saveFoodLog = async (userId: string, foodStrObj: string) => {
-    console.log('ai model', userId, foodStrObj);
-    const foodObj = this.convertStringToObject(foodStrObj);
-    console.log('converted obj', foodObj);
-    return mongoInstance.db.collection('foodLogs').insertOne({
-      userId: new ObjectId(userId),
-      foodObj,
-    });
+    try {
+      const foodObj = this.convertStringToObject(foodStrObj);
+      console.log('converted obj', foodObj);
+      return mongoInstance.db.collection('foodLogs').insertOne({
+        userId: new ObjectId(userId),
+        foodObj,
+      });
+    } catch (error) {
+      console.error('Error saving food log:', error);
+      throw error;
+    }
   };
 
   saveWeightLog = async (userId: string, weightLog: number) => {
@@ -42,7 +46,49 @@ export class AiModel {
       );
       return result;
     } catch (error) {
-      console.error('Error updating food log:', error);
+      console.error('Error saving weight log:', error);
+      throw error;
+    }
+  };
+
+  upsertArrayPoperty = async (
+    userId: string,
+    propertyName: string,
+    value: any,
+    upsert?: boolean
+  ) => {
+    try {
+      const result = await mongoInstance.db.collection('users').updateOne(
+        { _id: new ObjectId(userId) }, // Filter to match the document
+        {
+          $push: { [propertyName]: value }, // Push the new weight log to the array
+        },
+        { upsert } // Set to true if you want to create a new document when no document matches
+      );
+      return result;
+    } catch (error) {
+      console.error(`Error saving ${propertyName}:`, error);
+      throw error;
+    }
+  };
+
+  saveOrUpdateProperty = async (
+    userId: string,
+    propertyName: string,
+    propertyValue: string | number | boolean | object,
+    upsert?: boolean
+  ) => {
+    try {
+      const result = await mongoInstance.db.collection('users').updateOne(
+        { _id: new ObjectId(userId) }, // Filter to match the document
+        {
+          $set: { [propertyName]: propertyValue }, // Set the new value for the property
+        },
+        { upsert } // Set to true if you want to create a new document when no document matches
+      );
+      return result;
+    } catch (error) {
+      console.error(`Error saving ${propertyName}:`, error);
       throw error;
     }
   };

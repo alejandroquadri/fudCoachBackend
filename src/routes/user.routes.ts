@@ -21,25 +21,27 @@ export class UserRoutes {
     return this.router;
   }
 
-  signUp = async (req: Request, res: Response) => {
+  signUp = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, name, password } = req.body;
+      const { email, password, profile } = req.body;
 
-      const user = await this.userController.signUp(email, name, password);
-      if (typeof user === 'string' && user === 'email taken') {
-        throw new Error(user);
-      } else {
-        res.status(200).send(user);
-      }
+      const userData = await this.userController.signUp(
+        email,
+        password,
+        profile
+      );
+      res.status(200).send({
+        auth: true,
+        user: userData.user,
+        token: userData.token,
+        refreshToken: userData.refreshToken,
+      });
     } catch (error: unknown) {
-      console.log('el error es', error);
-      const errorDesc =
-        error instanceof Error ? error.message : 'Internal server error';
-      res.status(500).json({ error: errorDesc });
+      next(error);
     }
   };
 
-  login = async (req: Request, res: Response) => {
+  login = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password } = req.body;
       const userData = await this.userController.login(email, password);
@@ -58,10 +60,7 @@ export class UserRoutes {
         });
       }
     } catch (error: unknown) {
-      console.log('el error es', error);
-      const errorDesc =
-        error instanceof Error ? error.message : 'Internal server error';
-      res.status(500).json({ error: errorDesc });
+      next(error);
     }
   };
 
@@ -88,15 +87,14 @@ export class UserRoutes {
     }
   };
 
-  getUserByID = async (req: Request, res: Response) => {
+  getUserByID = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.body;
+    console.log('llega este id', id);
     try {
       const user = await this.userController.getUserById(id);
       res.status(200).json({ user });
     } catch (error: unknown) {
-      const errorDesc =
-        error instanceof Error ? error.message : 'Internal server error';
-      res.status(500).json({ error: errorDesc });
+      next(error);
     }
   };
 }

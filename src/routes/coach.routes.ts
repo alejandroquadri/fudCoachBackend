@@ -26,24 +26,14 @@ export class CoachRoutes {
     return this.router;
   };
 
-  private lcelAnswer = async (
+  private testCoach = (req: Request, res: Response) =>
+    res.send('Coach routes Ok');
+
+  private coachAnswer = async (
     req: Request,
     res: Response,
     next: NextFunction
   ) => {
-    try {
-      // const answer = await this.aiAgent.buildInitAgentEx();
-      const answer = await this.aiAgent.buildChatAgentLCEL();
-      res.status(200).json(answer);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  private testCoach = (req: Request, res: Response) =>
-    res.send('Coach routes Ok');
-
-  private coachAnswer = async (req: Request, res: Response) => {
     const { message, userId } = req.body;
     console.log('coach answer input', message, userId);
     try {
@@ -56,9 +46,7 @@ export class CoachRoutes {
       const answer = await this.aiController.coachResponse(message, userId);
       res.status(200).json(answer);
     } catch (error: unknown) {
-      const errorDesc =
-        error instanceof Error ? error.message : 'Internal server error';
-      res.status(500).json({ error: errorDesc });
+      next(error);
     }
   };
 
@@ -70,6 +58,20 @@ export class CoachRoutes {
       const results = await this.fatSecretSc.searchFoods(query);
       res.json(results);
     } catch (error: unknown) {
+      next(error);
+    }
+  };
+
+  private lcelAnswer = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      // const answer = await this.aiAgent.buildInitAgentEx();
+      const answer = await this.aiAgent.buildChatAgentLCEL();
+      res.status(200).json(answer);
+    } catch (error) {
       next(error);
     }
   };

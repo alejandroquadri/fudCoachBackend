@@ -1,247 +1,268 @@
-import {
-  AgentExecutor,
-  initializeAgentExecutorWithOptions,
-} from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import {
-  BufferMemory,
-  ChatMessageHistory,
-  ConversationSummaryBufferMemory,
-} from 'langchain/memory';
-import {
-  AIMessage,
-  AgentStep,
-  BaseMessage,
-  HumanMessage,
-} from 'langchain/schema';
-import { DynamicTool } from 'langchain/tools';
-import { MongoDBChatMessageHistory } from 'langchain/stores/message/mongodb';
-
-import { AiChatAnswer, ChatMsg } from '../types';
+  CoachPrompt,
+  FoodToolPrompt,
+  IntroCoachPrompt,
+} from './prompt.constant';
+import { AiChatAnswer } from '../types';
 import { AiModel } from '../models';
-import { mongoInstance } from '../connection';
-
-import { ChatPromptTemplate } from 'langchain/prompts';
-import { renderTextDescription } from 'langchain/tools/render';
-
-import { CoachPrompt, FoodToolPrompt } from './prompt.constant';
-import { formatLogToString } from 'langchain/agents/format_scratchpad/log';
-import { ReActSingleInputOutputParser } from 'langchain/agents/react/output_parser';
-import { RunnableSequence } from 'langchain/schema/runnable';
+import { ToolsService } from './ai-tools.service';
+import { AiAgentService } from './ai-agent.service';
+import { AiMemoryService } from './ai-memroy.service';
 
 export class AiService {
   aiModel: AiModel;
-  model: ChatOpenAI = new ChatOpenAI({
-    // modelName: 'gpt-4',
-    modelName: 'gpt-3.5-turbo',
-    temperature: 0,
-    // verbose: true,
-  });
+  toolsSc: ToolsService;
+  agentSc: AiAgentService;
+  aiMemorySc: AiMemoryService;
 
   coachPrompt = CoachPrompt;
+  introCoach = IntroCoachPrompt;
   foodToolPrompt = FoodToolPrompt;
 
   constructor() {
     this.aiModel = new AiModel();
+    this.toolsSc = new ToolsService();
+    this.agentSc = new AiAgentService();
+    this.aiMemorySc = new AiMemoryService();
   }
-
-  getChatPromptMemory = (
-    history?: ChatMessageHistory
-  ): ConversationSummaryBufferMemory => {
-    return new ConversationSummaryBufferMemory({
-      llm: new ChatOpenAI({
-        modelName: 'gpt-3.5-turbo',
-        temperature: 0,
-      }),
-      // llm: this.model,
-      maxTokenLimit: 10,
-      returnMessages: true,
-      chatHistory: history,
-      memoryKey: 'chat_history',
-      outputKey: 'output',
-    });
-  };
 
   getAiResponse = async (
     message: string,
     userId: string
   ): Promise<AiChatAnswer> => {
-    const chatHistoryCollection = mongoInstance.db.collection('chatHistory');
-    const mongoChatHistory = new MongoDBChatMessageHistory({
-      collection: chatHistoryCollection,
-      sessionId: userId,
-    });
-    const existingHistory = await mongoChatHistory.getMessages();
-    const agentChatPromptMemory = this.getChatPromptMemory(
-      new ChatMessageHistory(existingHistory)
-    );
-
-    const tools = [this.wheightTool(userId)];
-
-    const executor = await initializeAgentExecutorWithOptions(
-      tools,
-      this.model,
-      {
-        agentType: 'chat-conversational-react-description',
-        // agentType: 'openai-functions',
-        memory: agentChatPromptMemory,
-        returnIntermediateSteps: true,
-        agentArgs: {
-          systemMessage: this.coachPrompt,
-        },
-      }
-    );
-    // const answer = await executor.call({ input: message });
-    const answer = await executor.invoke({ input: message });
-    await mongoChatHistory.addMessage(new HumanMessage(message));
-    await mongoChatHistory.addMessage(new AIMessage(answer.output));
-    console.log('respuesta del ai desde ai service:', answer);
-    return answer as Promise<AiChatAnswer>;
-  };
-
-  getCustomAiResponse = async (
-    message: string,
-    userId: string
-  ): Promise<any> => {
-    console.log('comienza getCustomAiResponse');
-    console.time('Total Function Execution Time');
-    console.time('agent load');
-    /** Define your chat model */
     const model = new ChatOpenAI({
       modelName: 'gpt-4',
+      // modelName: 'gpt-3.5-turbo',
+      temperature: 0.5,
       verbose: false,
     });
 
-    /** Bind a stop token to the model */
-    const modelWithStop = model.bind({
-      stop: ['\nObservation'],
-    });
+    const tools = [
+      this.toolsSc.wheightTool(userId),
+      this.toolsSc.foodLogTool(userId),
+      this.toolsSc.nickNameSaveTool(userId),
+    ];
 
-    /** Define your list of tools */
-    const tools = [this.wheightTool(userId), this.foodLogTool(userId)];
+    const mongoHistory = this.aiMemorySc.buildMongoHistory(userId);
+    const memory = await this.aiMemorySc.buildMemory(mongoHistory);
 
-    // define prompt
-    const prompt = ChatPromptTemplate.fromMessages([
-      ['system', this.coachPrompt],
-    ]);
-
-    /** Add input variables to prompt */
-    const toolNames = tools.map(tool => tool.name);
-    const promptWithInputs = await prompt.partial({
-      tools: renderTextDescription(tools),
-      tool_names: toolNames.join(','),
-    });
-
-    const runnableAgent = RunnableSequence.from([
-      {
-        input: (i: {
-          input: string;
-          steps: AgentStep[];
-          chat_history: BaseMessage[];
-        }) => i.input,
-        agent_scratchpad: (i: {
-          input: string;
-          steps: AgentStep[];
-          chat_history: BaseMessage[];
-        }) => formatLogToString(i.steps),
-        chat_history: (i: {
-          input: string;
-          steps: AgentStep[];
-          chat_history: BaseMessage[];
-        }) => i.chat_history,
-      },
-      promptWithInputs,
-      modelWithStop,
-      new ReActSingleInputOutputParser({ toolNames }),
-    ]);
-
-    /* time here */
-    console.time('load messages');
-    const chatHistoryCollection = mongoInstance.db.collection('chatHistory');
-    const mongoChatHistory = new MongoDBChatMessageHistory({
-      collection: chatHistoryCollection,
-      sessionId: userId,
-    });
-    const existingHistory = await mongoChatHistory.getMessages();
-    // const agentChatPromptMemory = this.getChatPromptMemory(
-    //   new ChatMessageHistory(existingHistory)
-    // );
-
-    const memory = new BufferMemory({
-      memoryKey: 'chat_history',
-      chatHistory: new ChatMessageHistory(existingHistory),
-    });
-    console.timeEnd('load messages');
-
-    const executor = AgentExecutor.fromAgentAndTools({
-      agent: runnableAgent,
+    const executor = await this.agentSc.buildAgent(
+      model,
+      this.coachPrompt,
       tools,
-      // memory: agentChatPromptMemory,
-      memory,
-    });
+      memory
+    );
 
-    console.log('Loaded agent.');
-    console.timeEnd('agent load');
-
-    /* => time here */
-    console.time('ai response');
     const answer = await executor.invoke({ input: message });
-    // const answer = { output: 'mensaje prueba' };
     console.log(`Got output ${answer.output}`);
 
-    // const stream = await executor.stream({ input: message });
-    // for await (const chunk of stream) {
-    //   console.log(chunk);
-    // }
+    await this.aiMemorySc.saveNewHumanMsg(mongoHistory, message);
 
-    console.timeEnd('ai response');
+    await this.aiMemorySc.saveNewAiMsg(mongoHistory, answer.output);
 
-    /* => time here */
-    console.time('save new mess');
-    await mongoChatHistory.addMessage(new HumanMessage(message));
-    await mongoChatHistory.addMessage(new AIMessage(answer.output));
-    console.timeEnd('save new mess');
-
-    /* time here */
     console.timeEnd('Total Function Execution Time');
 
     return answer as AiChatAnswer;
   };
 
-  wheightTool = (id: string) =>
-    new DynamicTool({
-      name: 'Weight_Logs',
-      description:
-        'call this each time the user provides a new weight log. The input should be the number in kg of the new weight log',
-      func: async w => {
-        try {
-          console.log(w);
-          const weight = Number(w);
-          const res = await this.aiModel.saveWeightLog(id, weight);
-          console.log('peso guardado', res);
-          return 'Weigh was logged';
-        } catch (error) {
-          return 'There was an error logging your new weight log';
-        }
-      },
+  getAiIntroResponse = async (
+    message: string,
+    userId: string
+  ): Promise<AiChatAnswer> => {
+    const model = new ChatOpenAI({
+      modelName: 'gpt-4',
+      // modelName: 'gpt-3.5-turbo',
+      temperature: 0.5,
+      verbose: false,
     });
 
-  foodLogTool = (id: string) =>
-    new DynamicTool({
-      name: 'Food_Logs',
-      description: this.foodToolPrompt,
-      func: async (obj: string) => {
-        console.log(`inputs de funcion`, obj);
-        try {
-          await this.aiModel.saveFoodLog(id, obj);
-          console.log('food log saved');
-          return `Food log saved! ${obj}`;
-        } catch (error) {
-          return `error trying to save log: ${error}`;
-        }
-      },
-    });
+    const tools = [
+      this.toolsSc.wheightTool(userId),
+      this.toolsSc.nickNameSaveTool(userId),
+      this.toolsSc.birthdaySaveTool(userId),
+      this.toolsSc.genderSaveTool(userId),
+      this.toolsSc.qAndASaveTool(userId),
+      this.toolsSc.endQASaveTool(userId),
+    ];
+
+    const mongoHistory = this.aiMemorySc.buildMongoHistory(userId);
+    const memory = await this.aiMemorySc.buildMemory(mongoHistory);
+
+    const executor = await this.agentSc.buildAgent(
+      model,
+      this.introCoach,
+      tools,
+      memory
+    );
+
+    const answer = await executor.invoke({ input: message });
+    console.log(`Got output ${answer}`);
+
+    await this.aiMemorySc.saveNewHumanMsg(mongoHistory, message);
+    await this.aiMemorySc.saveNewAiMsg(mongoHistory, answer.output);
+
+    return answer as AiChatAnswer;
+  };
+
+  // getAiResponseOld = async (message: string, userId: string): Promise<any> => {
+  //   console.time('Total Function Execution Time');
+
+  //   /** Define your chat model */
+  //   const model = new ChatOpenAI({
+  //     modelName: 'gpt-4',
+  //     // modelName: 'gpt-3.5-turbo',
+  //     temperature: 0.5,
+  //     verbose: false,
+  //   });
+
+  //   /** Bind a stop token to the model */
+  //   const modelWithStop = model.bind({
+  //     stop: ['\nObservation'],
+  //   });
+
+  //   /** Define your list of tools */
+  //   // const tools = [this.wheightTool(userId), this.foodLogTool(userId)];
+  //   const tools = [
+  //     this.toolsSc.wheightTool(userId),
+  //     this.toolsSc.foodLogTool(userId),
+  //   ];
+
+  //   // define prompt
+  //   const prompt = ChatPromptTemplate.fromMessages([
+  //     ['system', this.coachPrompt],
+  //   ]);
+
+  //   /** Add input variables to prompt */
+  //   const toolNames = tools.map(tool => tool.name);
+  //   const promptWithInputs = await prompt.partial({
+  //     tools: renderTextDescription(tools),
+  //     tool_names: toolNames.join(','),
+  //   });
+  //   const runnableAgent = RunnableSequence.from([
+  //     {
+  //       input: (i: {
+  //         input: string;
+  //         steps: AgentStep[];
+  //         chat_history: BaseMessage[];
+  //       }) => i.input,
+  //       agent_scratchpad: (i: {
+  //         input: string;
+  //         steps: AgentStep[];
+  //         chat_history: BaseMessage[];
+  //       }) => formatLogToString(i.steps),
+  //       chat_history: (i: {
+  //         input: string;
+  //         steps: AgentStep[];
+  //         chat_history: BaseMessage[];
+  //       }) => i.chat_history,
+  //     },
+  //     promptWithInputs,
+  //     modelWithStop,
+  //     new ReActSingleInputOutputParser({ toolNames }),
+  //   ]);
+
+  //   /* time here */
+  //   const chatHistoryCollection = mongoInstance.db.collection('chatHistory');
+  //   const mongoChatHistory = new MongoDBChatMessageHistory({
+  //     collection: chatHistoryCollection,
+  //     sessionId: userId,
+  //   });
+  //   const existingHistory = await mongoChatHistory.getMessages();
+
+  //   const memory = new BufferMemory({
+  //     memoryKey: 'chat_history',
+  //     chatHistory: new ChatMessageHistory(existingHistory),
+  //   });
+
+  //   const executor = AgentExecutor.fromAgentAndTools({
+  //     agent: runnableAgent,
+  //     tools,
+  //     memory,
+  //   });
+  //   const answer = await executor.invoke({ input: message });
+  //   console.log(`Got output ${answer.output}`);
+
+  //   // guardo mensajes en la historia
+  //   await mongoChatHistory.addMessage(new HumanMessage(message));
+  //   await mongoChatHistory.addMessage(new AIMessage(answer.output));
+
+  //   console.timeEnd('Total Function Execution Time');
+
+  //   return answer as AiChatAnswer;
+  // };
+
+  // wheightTool = (id: string) =>
+  //   new DynamicTool({
+  //     name: 'Weight_Logs',
+  //     description:
+  //       'call this each time the user provides a new weight log. The input should be the number in kg of the new weight log',
+  //     func: async w => {
+  //       try {
+  //         console.log(w);
+  //         const weight = Number(w);
+  //         const res = await this.aiModel.saveWeightLog(id, weight);
+  //         console.log('peso guardado', res);
+  //         return 'Weigh was logged';
+  //       } catch (error) {
+  //         return 'There was an error logging your new weight log';
+  //       }
+  //     },
+  //   });
+
+  // foodLogTool = (id: string) =>
+  //   new DynamicTool({
+  //     name: 'Food_Logs',
+  //     description: this.foodToolPrompt,
+  //     func: async (obj: string) => {
+  //       console.log(`inputs de funcion`, obj);
+  //       try {
+  //         await this.aiModel.saveFoodLog(id, obj);
+  //         console.log('food log saved');
+  //         return `Food log saved! ${obj}`;
+  //       } catch (error) {
+  //         return `error trying to save log: ${error}`;
+  //       }
+  //     },
+  //   });
 }
+
+// getAiResponse = async (
+//   message: string,
+//   userId: string
+// ): Promise<AiChatAnswer> => {
+//   const chatHistoryCollection = mongoInstance.db.collection('chatHistory');
+//   const mongoChatHistory = new MongoDBChatMessageHistory({
+//     collection: chatHistoryCollection,
+//     sessionId: userId,
+//   });
+//   const existingHistory = await mongoChatHistory.getMessages();
+//   const agentChatPromptMemory = this.getChatPromptMemory(
+//     new ChatMessageHistory(existingHistory)
+//   );
+
+//   const tools = [this.wheightTool(userId)];
+
+//   const executor = await initializeAgentExecutorWithOptions(
+//     tools,
+//     this.model,
+//     {
+//       agentType: 'chat-conversational-react-description',
+//       // agentType: 'openai-functions',
+//       memory: agentChatPromptMemory,
+//       returnIntermediateSteps: true,
+//       agentArgs: {
+//         systemMessage: this.coachPrompt,
+//       },
+//     }
+//   );
+//   // const answer = await executor.call({ input: message });
+//   const answer = await executor.invoke({ input: message });
+//   await mongoChatHistory.addMessage(new HumanMessage(message));
+//   await mongoChatHistory.addMessage(new AIMessage(answer.output));
+//   console.log('respuesta del ai desde ai service:', answer);
+//   return answer as Promise<AiChatAnswer>;
+// };
 
 // getAiResponse = async (
 //   message: string,

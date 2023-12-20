@@ -1,37 +1,54 @@
 import { ChatMsg } from '../types';
 import { AiService } from '../services';
 import { ObjectId } from 'mongodb';
-import { ChatModel } from '../models';
+import { ChatModel, UserModel } from '../models';
 
 export class CoachController {
   aiService: AiService;
   chatModel: ChatModel;
+  userModel: UserModel;
 
   constructor() {
     this.aiService = new AiService();
     this.chatModel = new ChatModel();
+    this.userModel = new UserModel();
   }
 
   coachResponse = async (message: string, userId: string): Promise<ChatMsg> => {
-    console.log('comienzo con respuesta del ai');
-    const userChatMsg = this.buildUserMsg(message, userId, 'user');
-    const userInsertResult = await this.chatModel.saveMessage(userChatMsg);
-    console.log(
-      'respuesta despues de guardar user chat mes en coach controller:',
-      userInsertResult
-    );
-    console.log('pido respuesta al ai');
-    const response = await this.aiService
-      .getCustomAiResponse(message, userId)
-      .catch(err => console.log(err));
-    console.log('respuesta del ai', response?.output);
-    const aiChatMsg = this.buildUserMsg(response!.output, userId, 'ai');
-    const aiInsertResult = await this.chatModel.saveMessage(aiChatMsg);
-    console.log(
-      'respuesta despues de guardar ai chat mes en coach controller:',
-      aiInsertResult
-    );
-    return aiChatMsg;
+    console.log(message === 'New patient' || message === 'Greet the human');
+    if (!(message === 'New patient' || message === 'Greet the human')) {
+      console.log('voy a guardar mensajes');
+      // doy formato a los mensajes
+      const userChatMsg = this.buildUserMsg(message, userId, 'user');
+      // guardo el mensaje del usuario
+      await this.chatModel.saveMessage(userChatMsg);
+    }
+
+    const user = await this.userModel.getUserById(userId);
+    if (!user) {
+      throw new Error('No se encontró usuario');
+    }
+    let response;
+    if (user.completedQA) {
+      // piso respuesta al ai
+      response = await this.aiService
+        .getAiResponse(message, userId)
+        .catch(err => console.log('error en controlador', err));
+    } else {
+      // piso respuesta al ai
+      response = await this.aiService
+        .getAiIntroResponse(message, userId)
+        .catch(err => console.log('error en controlador', err));
+    }
+    // piso respuesta al ai
+    // doy formato y guardo mensaje del ai
+    if (response) {
+      const aiChatMsg = this.buildUserMsg(response.output, userId, 'ai');
+      await this.chatModel.saveMessage(aiChatMsg);
+      return aiChatMsg;
+    } else {
+      throw new Error('Error obteniendo respuesta de ai');
+    }
   };
 
   buildUserMsg(
