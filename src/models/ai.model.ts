@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { mongoInstance } from '../connection';
+import { format } from 'date-fns';
 
 export class AiModel {
   saveChatHistory = async (chatHistory: unknown, userId: string | ObjectId) => {
@@ -27,6 +28,8 @@ export class AiModel {
       console.log('converted obj', foodObj);
       return mongoInstance.db.collection('foodLogs').insertOne({
         userId: new ObjectId(userId),
+        dateString: format(new Date(), 'yyyy-MM-dd'),
+        date: new Date(),
         foodObj,
       });
     } catch (error) {

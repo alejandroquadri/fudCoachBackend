@@ -20,27 +20,25 @@ export class ChatModel {
   getRecentMessages = async (
     userId: string | ObjectId,
     limit = 50
-  ): Promise<WithId<ChatMsg>[]> => {
+  ): Promise<ChatMsg[]> => {
     return mongoInstance.db
-      .collection(this.collectionName)
+      .collection<ChatMsg>(this.collectionName)
       .find({ userId: new ObjectId(userId) })
       .sort({ timestamp: -1 }) // Sort by most recent messages
       .limit(limit)
-      .toArray() as Promise<WithId<ChatMsg>[]>;
+      .toArray();
   };
 
   /**
    * Fetch recent messages for a user.
    * @param userId - The ID of the user.
    */
-  getMessages = async (
-    userId: string | ObjectId
-  ): Promise<WithId<ChatMsg>[]> => {
+  getMessages = async (userId: string | ObjectId): Promise<ChatMsg[]> => {
     return mongoInstance.db
-      .collection(this.collectionName)
+      .collection<ChatMsg>(this.collectionName)
       .find({ userId: new ObjectId(userId) })
       .sort({ timestamp: -1 }) // Sort by most recent messages
-      .toArray() as Promise<WithId<ChatMsg>[]>;
+      .toArray();
   };
 
   /**
@@ -53,14 +51,14 @@ export class ChatModel {
     userId: string | ObjectId,
     startDate: Date,
     endDate: Date
-  ): Promise<WithId<ChatMsg>[]> => {
+  ): Promise<ChatMsg[]> => {
     return mongoInstance.db
-      .collection(this.collectionName)
+      .collection<ChatMsg>(this.collectionName)
       .find({
         userId: new ObjectId(userId),
         timestamp: { $gte: startDate, $lte: endDate },
       })
       .sort({ timestamp: 1 }) // Sort by oldest to newest
-      .toArray() as Promise<WithId<ChatMsg>[]>;
+      .toArray();
   };
 }

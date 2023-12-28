@@ -1,8 +1,8 @@
 import { Application, Request, Response } from 'express';
-import passport from 'passport';
 import { CoachRoutes } from './coach.routes';
 import { ChatRoutes } from './chat.routes';
 import { UserRoutes } from './user.routes';
+import { FoodLogsRoutes } from './food-logs.routes';
 import { authJWT } from '../middlewares';
 
 export const initializeRoutes = (app: Application) => {
@@ -12,5 +12,6 @@ export const initializeRoutes = (app: Application) => {
 
   app.use('/coach', authJWT, new CoachRoutes().getRouter());
   app.use('/chat', authJWT, new ChatRoutes().getRouter());
+  app.use('/food-logs', authJWT, new FoodLogsRoutes().getRouter());
   app.use('/users', new UserRoutes().getRouter());
 };

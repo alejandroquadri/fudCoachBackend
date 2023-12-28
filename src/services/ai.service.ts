@@ -8,7 +8,7 @@ import { AiChatAnswer } from '../types';
 import { AiModel } from '../models';
 import { ToolsService } from './ai-tools.service';
 import { AiAgentService } from './ai-agent.service';
-import { AiMemoryService } from './ai-memroy.service';
+import { AiMemoryService } from './ai-memory.service';
 
 export class AiService {
   aiModel: AiModel;
@@ -60,8 +60,6 @@ export class AiService {
     await this.aiMemorySc.saveNewHumanMsg(mongoHistory, message);
 
     await this.aiMemorySc.saveNewAiMsg(mongoHistory, answer.output);
-
-    console.timeEnd('Total Function Execution Time');
 
     return answer as AiChatAnswer;
   };
