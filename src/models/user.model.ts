@@ -1,5 +1,4 @@
-import bcrypt from 'bcryptjs';
-import { User, newProfile } from '../types';
+import { RegistrationData, TargetObj, User, UserWithoutId } from '../types';
 import { mongoInstance } from '../connection';
 import { ObjectId } from 'mongodb';
 
@@ -7,12 +6,13 @@ export class UserModel {
   createUser = async (
     email: string,
     password: string,
-    profile: newProfile
+    profile: RegistrationData,
+    targetObj: TargetObj
   ): Promise<{ acknowledged: boolean; insertedId: ObjectId }> => {
-    const hashedPassword = await bcrypt.hash(password, 8);
-    return mongoInstance.db.collection('users').insertOne({
+    // const hashedPassword = await bcrypt.hash(password, 8);
+    const form: UserWithoutId = {
       email,
-      password: hashedPassword,
+      password,
       name: profile.name,
       weightLogs: [
         {
@@ -24,9 +24,11 @@ export class UserModel {
       height: profile.height,
       heightUnit: profile.heightUnit,
       birthday: profile.birthdate,
-      gender: profile.gender,
-      completedQA: false,
-    });
+      sex: profile.sex,
+      completedQA: true,
+      ...targetObj,
+    };
+    return mongoInstance.db.collection('users').insertOne(form);
   };
 
   getUserByEmail = (email: string): Promise<User | null> => {

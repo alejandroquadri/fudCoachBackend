@@ -28,19 +28,26 @@ export class CoachController {
     if (!user) {
       throw new Error('No se encontró usuario');
     }
-    let response;
-    if (user.completedQA) {
-      // piso respuesta al ai
-      response = await this.aiService
-        .getAiResponse(message, userId)
-        .catch(err => console.log('error en controlador', err));
-    } else {
-      // piso respuesta al ai
-      response = await this.aiService
-        .getAiIntroResponse(message, userId)
-        .catch(err => console.log('error en controlador', err));
-    }
-    // piso respuesta al ai
+
+    // !Esto lo usaria si quiero dos ai disitntos para intro y el resto de las consultas comunes
+    // let response;
+    // if (user.completedQA) {
+    //   // pido respuesta al ai
+    //   response = await this.aiService
+    //     .getAiResponse(message, userId)
+    //     .catch(err => console.log('error en controlador', err));
+    // } else {
+    //   // pido respuesta al ai si no se ha completado QA
+    //   response = await this.aiService
+    //     .getAiIntroResponse(message, userId)
+    //     .catch(err => console.log('error en controlador', err));
+    // }
+
+    // pido respuesta al ai si no se ha completado QA
+    const response = await this.aiService
+      .getAiResponse(message, userId)
+      .catch(err => console.log('error en controlador', err));
+
     // doy formato y guardo mensaje del ai
     if (response) {
       const aiChatMsg = this.buildUserMsg(response.output, userId, 'ai');

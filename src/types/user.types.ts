@@ -5,21 +5,42 @@ export interface User {
   password: string;
   weightLogs: Array<{ weightLog: number; date: Date }>;
   weightUnit: string;
-  height: string;
+  height: number;
   heightUnit: string;
-  birthday: string;
-  gender: string;
+  birthday: Date;
+  sex: string;
+  bmr: number;
+  tdee: number;
+  dailyCaloricTarget: number;
+  dailyFatTarget: number;
+  dailyCarbsTarget: number;
+  dailyProteinTarget: number;
   completedQA: boolean;
   nickName?: string;
   qAndAnswers?: Array<string>;
 }
 
-export type newProfile = {
+export type UserWithoutId = Omit<User, '_id'>;
+
+export interface RegistrationData {
   name: string;
+  email: string;
+  password: string;
   birthdate: Date;
-  weight: string;
-  height: string;
+  weight: number;
   weightUnit: string;
+  height: number;
   heightUnit: string;
-  gender: string;
-};
+  sex: string;
+  lifestyle: number;
+  weightGoal: number;
+}
+
+export interface TargetObj {
+  bmr: number;
+  tdee: number;
+  dailyCaloricTarget: number;
+  dailyFatTarget: number;
+  dailyCarbsTarget: number;
+  dailyProteinTarget: number;
+}

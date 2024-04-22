@@ -1,13 +1,14 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { UserController } from '../controllers';
+import { RegistrationData } from '../types';
 
 export class UserRoutes {
   private router: Router = express.Router();
-  userController: UserController;
+  userController: UserController = new UserController();
 
   constructor() {
     this.initializeRoutes();
-    this.userController = new UserController();
+    // this.userController = new UserController();
   }
 
   private initializeRoutes(): void {
@@ -23,12 +24,15 @@ export class UserRoutes {
 
   signUp = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password, profile } = req.body;
-
+      // const { email, password, profile } = req.body;
+      const { registrationData } = req.body as {
+        registrationData: RegistrationData;
+      };
+      console.log('esto es lo que llega', registrationData);
       const userData = await this.userController.signUp(
-        email,
-        password,
-        profile
+        registrationData.email,
+        registrationData.password,
+        registrationData
       );
       res.status(200).send({
         auth: true,
@@ -79,7 +83,7 @@ export class UserRoutes {
       }
 
       res.status(200).send({
-        accessToken: userData.accessToken,
+        accessToken: userData.token,
         refreshToken: userData.refreshToken, // Optionally send a new refresh token
       });
     } catch (error: unknown) {
