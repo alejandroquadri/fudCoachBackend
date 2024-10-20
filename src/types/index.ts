@@ -1,3 +1,3 @@
 export * from './chat.types';
 export * from './user.types';
-export * from './foodLogs.types';
+export * from './logs.types';

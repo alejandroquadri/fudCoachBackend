@@ -1,45 +1,45 @@
-import { mongoInstance } from '../connection';
-import { ObjectId, WithId } from 'mongodb';
-import { ChatMsg } from './../types';
+import { ObjectId } from 'mongodb';
+import { MongoService } from '../services/mongo.service'; // Import MongoService
+import { ChatMsg } from '../types';
 
 export class ChatModel {
-  collectionName = 'chatMessages';
+  private mongoService: MongoService<ChatMsg>;
+
+  constructor() {
+    this.mongoService = new MongoService<ChatMsg>('chatMessages');
+  }
+
   /**
    * Save a new message from the user or AI.
    * @param message - The message object containing userId, sender, content, and timestamp.
    */
-  saveMessage = async (message: ChatMsg): Promise<unknown> => {
-    return mongoInstance.db.collection(this.collectionName).insertOne(message);
-  };
+  async saveMessage(
+    message: ChatMsg
+  ): Promise<{ acknowledged: boolean; insertedId: ObjectId }> {
+    return this.mongoService.create(message);
+  }
 
   /**
    * Fetch recent messages for a user.
    * @param userId - The ID of the user.
    * @param limit - Number of recent messages to fetch. Default is 50.
    */
-  getRecentMessages = async (
+  async getRecentMessages(
     userId: string | ObjectId,
     limit = 50
-  ): Promise<ChatMsg[]> => {
-    return mongoInstance.db
-      .collection<ChatMsg>(this.collectionName)
-      .find({ userId: new ObjectId(userId) })
-      .sort({ timestamp: -1 }) // Sort by most recent messages
-      .limit(limit)
-      .toArray();
-  };
+  ): Promise<ChatMsg[]> {
+    const query = { userId: new ObjectId(userId) };
+    return this.mongoService.find(query, { sort: { timestamp: -1 }, limit });
+  }
 
   /**
-   * Fetch recent messages for a user.
+   * Fetch all messages for a user.
    * @param userId - The ID of the user.
    */
-  getMessages = async (userId: string | ObjectId): Promise<ChatMsg[]> => {
-    return mongoInstance.db
-      .collection<ChatMsg>(this.collectionName)
-      .find({ userId: new ObjectId(userId) })
-      .sort({ timestamp: -1 }) // Sort by most recent messages
-      .toArray();
-  };
+  async getMessages(userId: string | ObjectId): Promise<ChatMsg[]> {
+    const query = { userId: new ObjectId(userId) };
+    return this.mongoService.find(query, { sort: { timestamp: -1 } });
+  }
 
   /**
    * Fetch messages for a user within a specific date range.
@@ -47,18 +47,15 @@ export class ChatModel {
    * @param startDate - Start date for the range.
    * @param endDate - End date for the range.
    */
-  getMessagesByDateRange = async (
+  async getMessagesByDateRange(
     userId: string | ObjectId,
     startDate: Date,
     endDate: Date
-  ): Promise<ChatMsg[]> => {
-    return mongoInstance.db
-      .collection<ChatMsg>(this.collectionName)
-      .find({
-        userId: new ObjectId(userId),
-        timestamp: { $gte: startDate, $lte: endDate },
-      })
-      .sort({ timestamp: 1 }) // Sort by oldest to newest
-      .toArray();
-  };
+  ): Promise<ChatMsg[]> {
+    const query = {
+      userId: new ObjectId(userId),
+      timestamp: { $gte: startDate, $lte: endDate },
+    };
+    return this.mongoService.find(query, { sort: { timestamp: 1 } });
+  }
 }

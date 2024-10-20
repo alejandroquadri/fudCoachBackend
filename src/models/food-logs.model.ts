@@ -1,45 +1,71 @@
-import { mongoInstance } from '../connection';
-import { ObjectId } from 'mongodb';
+import { ObjectId, OptionalId } from 'mongodb';
 import { FoodLog } from '../types';
+import { MongoService } from '../services';
 
 export class FoodLogsModel {
   collectionName = 'foodLogs';
+  mongoSc: MongoService<FoodLog>;
+  constructor() {
+    this.mongoSc = new MongoService<FoodLog>('foodLogs');
+  }
 
-  /**
-   * Get foodLogs for a user and date
-   * @param userId - The ID of the user
-   * @param dateString - The date of the foodLogs as a string in 'YYYY-MM-DD' format
-   * @returns Promise<FoodLog[]>
-   */
+  createFoodLog = async (foodLog: OptionalId<FoodLog>) => {
+    if (typeof foodLog._id === 'string') {
+      foodLog._id = new ObjectId(foodLog._id);
+    }
+    if (typeof foodLog.user_id === 'string') {
+      foodLog.user_id = new ObjectId(foodLog.user_id);
+    }
+    return this.mongoSc.create(foodLog);
+  };
+
+  editFoodLog = async (foodLog: FoodLog) => {
+    // Ensure the food log has a valid _id
+    if (!foodLog._id) {
+      throw new Error('FoodLog must have an _id to be updated');
+    }
+
+    // Remove _id from the update object to avoid trying to update it
+    const { _id, user_id, ...updateData } = foodLog;
+
+    return this.mongoSc.update(_id, updateData);
+  };
+
+  deleteFoodLog = async (id: string | ObjectId) => {
+    // Ensure the id is an ObjectId
+    const objectId = typeof id === 'string' ? new ObjectId(id) : id;
+
+    try {
+      const result = await this.mongoSc.delete(objectId);
+      if (result.deletedCount === 1) {
+        console.log(`Successfully deleted food log with id: ${id}`);
+        return { success: true, message: `Food log with id ${id} deleted` };
+      } else {
+        console.log(`No food log found with id: ${id}`);
+        return { success: false, message: `No food log found with id ${id}` };
+      }
+    } catch (error) {
+      console.error('Error deleting food log:', error);
+      return {
+        success: false,
+        message: 'Error occurred while deleting food log',
+        error,
+      };
+    }
+  };
+
   getFoodLogsByDate = async (
     userId: string | ObjectId,
-    dateInput: Date
+    date: string
   ): Promise<FoodLog[]> => {
     try {
-      // Ensure dateInput is a Date object
-      const date = new Date(dateInput);
-      if (isNaN(date.getTime())) {
-        throw new Error('Invalid date format');
-      }
-      // Set to start of the day
-      date.setHours(0, 0, 0, 0);
-
-      // Create a new Date object for the end of the day
-      const endDate = new Date(date);
-      endDate.setHours(23, 59, 59, 999);
-
+      userId = typeof userId === 'string' ? new ObjectId(userId) : userId;
       const query = {
-        userId: new ObjectId(userId),
-        date: {
-          $gte: date, // Greater than or equal to the start of the day
-          $lt: endDate, // Less than the end of the day
-        },
+        user_id: userId,
+        date,
       };
-      return mongoInstance.db
-        .collection<FoodLog>(this.collectionName)
-        .find(query)
-        .sort({ date: 1 })
-        .toArray();
+
+      return this.mongoSc.find(query, { sort: { date: 1 } });
     } catch (error) {
       console.error('Error getting food logs:', error);
       throw error;

@@ -4,6 +4,7 @@ import { mongoInstance } from './connection';
 import { initializeMiddlewares } from './middlewares';
 import { initializePassportStrategy } from './strategies/jwtStrategy';
 import { initializeRoutes } from './routes';
+
 dotenv.config();
 
 class App {
@@ -11,10 +12,22 @@ class App {
 
   constructor() {
     this.app = express();
-    this.initializeMiddlewares();
-    this.connect();
-    this.initializePassport();
-    this.initializeRoutes();
+  }
+
+  // Separate the initialization logic from the constructor to control the flow
+  public async start(port: number): Promise<void> {
+    try {
+      await this.connect(); // Ensure MongoDB is connected before anything else
+      this.initializeMiddlewares();
+      this.initializePassport();
+      this.initializeRoutes();
+
+      this.app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+      });
+    } catch (error) {
+      console.error('Failed to start the application:', error);
+    }
   }
 
   private initializeRoutes = () => {
@@ -29,19 +42,22 @@ class App {
     initializePassportStrategy();
   }
 
-  public start(port: number): void {
-    this.app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
-    });
-  }
-
-  async connect() {
-    await mongoInstance
-      .connect()
-      .catch((err: any) => console.log('error en mongo', err));
+  // Ensure the connection is properly awaited
+  private async connect(): Promise<void> {
+    try {
+      await mongoInstance.connect();
+      console.log('Connected to MongoDB');
+    } catch (err) {
+      console.log('Error connecting to MongoDB:', err);
+      throw err; // Rethrow the error to prevent the app from starting
+    }
   }
 }
 
 const app = new App();
-const port = Number(process.env.PORT || 5000);
-app.start(port);
+const port = Number(process.env.PORT || 3000);
+
+// Start the app and ensure proper asynchronous flow
+app.start(port).catch(err => {
+  console.error('Error starting the application:', err);
+});

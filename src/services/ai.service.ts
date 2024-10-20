@@ -32,8 +32,9 @@ export class AiService {
     userId: string
   ): Promise<AiChatAnswer> => {
     const model = new ChatOpenAI({
-      modelName: 'gpt-4',
+      // modelName: 'gpt-4',
       // modelName: 'gpt-3.5-turbo',
+      modelName: 'gpt-4o-mini',
       temperature: 0.5,
       verbose: false,
     });

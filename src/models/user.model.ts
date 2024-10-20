@@ -1,15 +1,30 @@
-import { RegistrationData, TargetObj, User, UserWithoutId } from '../types';
-import { mongoInstance } from '../connection';
 import { ObjectId } from 'mongodb';
+import { RegistrationData, TargetObj, User, UserWithoutId } from '../types';
+import { MongoService } from '../services'; // Import MongoService
 
 export class UserModel {
-  createUser = async (
+  private mongoService: MongoService<User>;
+
+  constructor() {
+    // Instantiate the MongoService for the 'users' collection
+    this.mongoService = new MongoService<User>('users');
+  }
+
+  /**
+   * Create a new user in the database
+   * @param email - User's email
+   * @param password - User's password (hashed)
+   * @param profile - Registration data
+   * @param targetObj - Target object for user goals
+   * @returns Insert result with acknowledged and insertedId
+   */
+  async createUser(
     email: string,
     password: string,
     profile: RegistrationData,
     targetObj: TargetObj
-  ): Promise<{ acknowledged: boolean; insertedId: ObjectId }> => {
-    // const hashedPassword = await bcrypt.hash(password, 8);
+  ): Promise<{ acknowledged: boolean; insertedId: ObjectId }> {
+    // Prepare the user data without _id
     const form: UserWithoutId = {
       email,
       password,
@@ -28,19 +43,32 @@ export class UserModel {
       completedQA: true,
       ...targetObj,
     };
-    return mongoInstance.db.collection('users').insertOne(form);
-  };
 
-  getUserByEmail = (email: string): Promise<User | null> => {
+    // Use MongoService to insert the user and return the result
+    return this.mongoService.create(form);
+  }
+
+  /**
+   * Find a user by email
+   * @param email - The user's email
+   * @returns The user document or null
+   */
+  async getUserByEmail(email: string): Promise<User | null> {
     email = email.toLowerCase();
-    return mongoInstance.db
-      .collection('users')
-      .findOne({ email }) as Promise<User | null>;
-  };
+    const query = { email };
 
-  getUserById = (id: string | ObjectId): Promise<User | null> => {
-    return mongoInstance.db
-      .collection('users')
-      .findOne({ _id: new ObjectId(id) }) as Promise<User | null>;
-  };
+    // Use MongoService to find the user by email
+    return this.mongoService.findOne(query);
+  }
+
+  /**
+   * Find a user by ID
+   * @param id - The user's ID (either string or ObjectId)
+   * @returns The user document or null
+   */
+  async getUserById(id: string | ObjectId): Promise<User | null> {
+    id = typeof id === 'string' ? new ObjectId(id) : id;
+    const query = { _id: id };
+    return this.mongoService.findOne(query);
+  }
 }

@@ -14,22 +14,16 @@ class Mongo {
 
   public async connect(): Promise<MongoClient> {
     if (!this.client) {
-      try {
-        const user = process.env.DB_USER || '';
-        const password = process.env.DB_PASSWORD || '';
-        // const dbName = process.env.DB_NAME || 'defaultDbName';
+      const user = process.env.DB_USER || '';
+      const password = process.env.DB_PASSWORD || '';
+      // const dbName = process.env.DB_NAME || 'defaultDbName';
 
-        if (!user || !password) {
-          throw new Error('Database credentials are not set.');
-        }
-
-        const uri = `mongodb+srv://${user}:${password}@cluster0.c6fei51.mongodb.net/?retryWrites=true&w=majority`;
-        this.client = await MongoClient.connect(uri);
-        console.log('Connected to db');
-      } catch (error) {
-        console.error('Failed to connect to the database:', error);
-        throw error;
+      if (!user || !password) {
+        throw new Error('Database credentials are not set.');
       }
+
+      const uri = `mongodb+srv://${user}:${password}@cluster0.c6fei51.mongodb.net/?retryWrites=true&w=majority`;
+      this.client = await MongoClient.connect(uri);
     }
     return this.client;
   }
@@ -47,22 +41,3 @@ class Mongo {
 }
 
 export const mongoInstance = Mongo.getInstance();
-
-// import { MongoClient } from 'mongodb';
-
-// class Mongo {
-//   public client: any;
-
-//   public async connect() {
-//     const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.c6fei51.mongodb.net/?retryWrites=true&w=majority`;
-//     this.client = await MongoClient.connect(uri);
-//     console.log('Connected to db');
-//     return this.client as MongoClient;
-//   }
-
-//   get db() {
-//     return this.client.db(process.env.DB_NAME);
-//   }
-// }
-
-// export = new Mongo();
