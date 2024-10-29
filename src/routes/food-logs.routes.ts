@@ -37,10 +37,12 @@ export class FoodLogsRoutes {
       if (!date) {
         throw new Error('no date');
       }
+      console.log(user_id, date);
       const foodLogs = await this.foodLogsController.getFoodLogsByDate(
         user_id,
         date
       );
+      console.log(foodLogs);
       res.status(200).json(foodLogs);
     } catch (error: unknown) {
       next(error);

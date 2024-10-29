@@ -12,8 +12,7 @@ export class WaterLogsRoutes {
   private initilizeRoutes = () => {
     this.router.get('/', this.test);
     this.router.post('/by-date', this.getWaterLogsByDate);
-    this.router.post('/create', this.createWaterLog);
-    this.router.post('/edit', this.editWaterLog);
+    this.router.post('/upsert', this.upsertWaterLog);
     this.router.post('/delete', this.deleteWaterLog);
   };
 
@@ -34,7 +33,7 @@ export class WaterLogsRoutes {
       if (!user_id) {
         throw new Error('no user id');
       }
-      const waterLogs = await this.waterLogsCtrl.getWaterLogsByDate(
+      const waterLogs = await this.waterLogsCtrl.getWaterLogByDate(
         user_id,
         date
       );
@@ -44,7 +43,7 @@ export class WaterLogsRoutes {
     }
   };
 
-  private createWaterLog = async (
+  private upsertWaterLog = async (
     req: Request,
     res: Response,
     next: NextFunction
@@ -54,20 +53,7 @@ export class WaterLogsRoutes {
       if (!waterLog) {
         throw new Error('no water log');
       }
-      const waterLogRet = await this.waterLogsCtrl.createWaterLog(waterLog);
-      res.status(200).json(waterLogRet);
-    } catch (error: unknown) {
-      next(error);
-    }
-  };
-
-  editWaterLog = async (req: Request, res: Response, next: NextFunction) => {
-    const { waterLog } = req.body;
-    try {
-      if (!waterLog) {
-        throw new Error('no water log');
-      }
-      const waterLogRet = await this.waterLogsCtrl.editWaterLog(waterLog);
+      const waterLogRet = await this.waterLogsCtrl.upsertWaterLog(waterLog);
       res.status(200).json(waterLogRet);
     } catch (error: unknown) {
       next(error);

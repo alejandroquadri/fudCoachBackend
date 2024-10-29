@@ -24,7 +24,6 @@ export interface WaterLog {
   createdAt?: Date; // timestamp when log was created
   updatedAt?: Date; // timestamp when log was updated
   date: string;
-  hour: string;
   waterCups: number;
 }
 

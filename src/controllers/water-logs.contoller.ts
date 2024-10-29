@@ -9,40 +9,23 @@ export class WaterLogsController {
     this.waterLogsModel = new WaterLogsModel();
   }
 
-  getWaterLogsByDate = async (
+  getWaterLogByDate = async (
     userId: string,
     date: string
-  ): Promise<WaterLog[]> => {
+  ): Promise<WaterLog | null> => {
     try {
-      return this.waterLogsModel.getWaterLogsByDate(userId, date);
+      return this.waterLogsModel.getWaterLogByDate(userId, date);
     } catch (error) {
       console.error('Error in ctrl getting water logs:', error);
       throw error;
     }
   };
 
-  createWaterLog = async (
-    waterLog: WaterLog
-  ): Promise<{
-    acknowledged: boolean;
-    insertedId: ObjectId;
-  }> => {
+  upsertWaterLog = async (waterLog: WaterLog) => {
     try {
-      return this.waterLogsModel.createWaterLog(waterLog);
+      return this.waterLogsModel.upsertWaterLog(waterLog);
     } catch (error) {
       throw new Error('Error creating water log');
-    }
-  };
-
-  editWaterLog = async (waterLog: WaterLog) => {
-    // Ensure the water log has a valid _id
-    try {
-      if (!waterLog._id) {
-        throw new Error('WaterLog must have an _id to be updated');
-      }
-      return this.waterLogsModel.editWaterLog(waterLog);
-    } catch (error) {
-      throw new Error('Error updating water log');
     }
   };
 

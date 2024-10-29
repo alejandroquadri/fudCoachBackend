@@ -1,6 +1,5 @@
 import {
   ObjectId,
-  OptionalId,
   Filter,
   Db,
   WithId,
@@ -9,27 +8,24 @@ import {
   Sort,
   UpdateResult,
   DeleteResult,
+  UpdateFilter,
 } from 'mongodb';
-import { startOfDay, endOfDay } from 'date-fns';
 import { mongoInstance } from '../connection';
 
-// Ensure that T extends Document so that it is compatible with MongoDB documents.
-export class MongoService<T extends Document> {
+// Define a type that includes the timestamp fields
+type TimestampedDocument = Document & {
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+// Ensure that T extends TimestampedDocument
+export class MongoService<T extends TimestampedDocument> {
   private collectionName: string;
   private db: Db;
 
   constructor(collectionName: string) {
     this.collectionName = collectionName;
     this.db = mongoInstance.db;
-  }
-
-  /**
-   * Find a single document based on a query.
-   * @param query - The filter query to use for finding a document
-   * @returns The found document or null
-   */
-  async findOne(query: Filter<T>): Promise<WithId<T> | null> {
-    return this.db.collection<T>(this.collectionName).findOne(query);
   }
 
   /**
@@ -73,6 +69,19 @@ export class MongoService<T extends Document> {
   }
 
   /**
+   * Update an existing document or insert a new one if it doesn't exist.
+   * @param filter - The filter to locate the document
+   * @param document - The data to update or insert in the document
+   * @returns The result of the upsert operation
+   */
+
+  upsert(filter: Filter<T>, document: Partial<T>): Promise<UpdateResult<T>> {
+    return this.db
+      .collection<T>(this.collectionName)
+      .updateOne(filter, document, { upsert: true });
+  }
+
+  /**
    * Delete a document by its ID.
    * @param id - The document ID, either as a string or ObjectId
    * @returns True if the document was deleted, otherwise false
@@ -109,28 +118,13 @@ export class MongoService<T extends Document> {
     // Convert the cursor to an array and return the result
     return cursor.toArray();
   }
+
+  /**
+   * Find a single document based on a query.
+   * @param query - The filter query to use for finding a document
+   * @returns The found document or null
+   */
+  async findOne(query: Filter<T>): Promise<WithId<T> | null> {
+    return this.db.collection<T>(this.collectionName).findOne(query);
+  }
 }
-
-// /**
-//  * Get documents by date range for a specific user.
-//  * @param userId - The user's ID, either as a string or ObjectId
-//  * @param date - The date for which logs are fetched
-//  * @returns An array of documents
-//  */
-// async getByDate(userId: string | ObjectId, date: Date): Promise<WithId<T>[]> {
-//   const objectId = typeof userId === 'string' ? new ObjectId(userId) : userId;
-//   const startDate = startOfDay(date);
-//   const endDate = endOfDay(date);
-
-//   const query = {
-//     userId: objectId,
-//     date: { $gte: startDate, $lt: endDate },
-//   };
-
-//   // Return documents, ensuring the _id field is included (WithId<T>)
-//   return this.db
-//     .collection<T>(this.collectionName)
-//     .find(query as unknown as Filter<T>)
-//     .sort({ date: 1 })
-//     .toArray();
-// }
