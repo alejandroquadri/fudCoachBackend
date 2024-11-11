@@ -6,6 +6,7 @@ import { UserRoutes } from './user.routes';
 import { FoodLogsRoutes } from './food-logs.routes';
 import { WaterLogsRoutes } from './water-logs.routes';
 import { ExerciseLogsRoutes } from './exercise-logs.routes';
+import { WeightLogsRoutes } from './weight-logs.routes';
 
 export const initializeRoutes = (app: Application) => {
   app.get('/', (_req: Request, res: Response) => {
@@ -17,5 +18,6 @@ export const initializeRoutes = (app: Application) => {
   app.use('/food-logs', authJWT, new FoodLogsRoutes().getRouter());
   app.use('/water-logs', authJWT, new WaterLogsRoutes().getRouter());
   app.use('/exercise-logs', authJWT, new ExerciseLogsRoutes().getRouter());
+  app.use('/weight-logs', authJWT, new WeightLogsRoutes().getRouter());
   app.use('/users', new UserRoutes().getRouter());
 };

@@ -45,8 +45,11 @@ export class ExerciseLogsController {
   };
 
   deleteExerciseLog = async (id: string | ObjectId) => {
-    // Ensure the id is an ObjectId
-    const objectId = typeof id === 'string' ? new ObjectId(id) : id;
-    return this.exerciseLogsModel.deleteExerciseLog(objectId);
+    try {
+      const objectId = typeof id === 'string' ? new ObjectId(id) : id;
+      return this.exerciseLogsModel.deleteExerciseLog(objectId);
+    } catch (error) {
+      throw new Error('Error deleting exercise log');
+    }
   };
 }

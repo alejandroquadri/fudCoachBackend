@@ -26,7 +26,7 @@ export class ExerciseLogsModel {
       throw new Error('ExerciseLog must have an _id to be updated');
     }
 
-    // Remove _id from the update object to avoid trying to update it
+    // NOTE: Remove _id from the update object to avoid trying to update it
     const { _id, user_id, ...updateData } = exerciseLog;
 
     return this.mongoSc.update(_id, updateData);
