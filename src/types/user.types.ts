@@ -46,3 +46,15 @@ export interface TargetObj {
   dailyCarbsTarget: number;
   dailyProteinTarget: number;
 }
+
+export interface AiUserPreferences {
+  name: string;
+  favorite_foods: Array<string>;
+  hated_foods: Array<string>;
+  birthdate: string;
+  diet_type: string;
+  usual_breakfast: string;
+  usual_lunch: string;
+  usual_dinner: string;
+  usual_snack: string;
+}
