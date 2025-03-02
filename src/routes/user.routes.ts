@@ -16,39 +16,11 @@ export class UserRoutes {
     this.router.post('/login', this.login);
     this.router.post('/refreshToken', this.refreshToken);
     this.router.post('/getUserById', this.getUserByID);
-    this.router.post('/add-food-mock', this.mockAddFood);
-    this.router.post('/add-weight-mock', this.mockAddWeight);
   }
 
   public getRouter(): Router {
     return this.router;
   }
-
-  private mockAddFood = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    const { meal_obj } = req.body;
-    if (!meal_obj) {
-      throw new Error('no food item');
-    }
-    console.log(meal_obj);
-    res.status(200).json({ res: 'Food Added' });
-  };
-
-  private mockAddWeight = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    const { weight } = req.body;
-    if (!weight) {
-      throw new Error('no weight');
-    }
-    console.log(weight);
-    res.status(200).json({ res: 'Weight Added' });
-  };
 
   signUp = async (req: Request, res: Response, next: NextFunction) => {
     try {

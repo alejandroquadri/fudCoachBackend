@@ -24,6 +24,7 @@ export interface WaterLog {
   createdAt?: Date; // timestamp when log was created
   updatedAt?: Date; // timestamp when log was updated
   date: string;
+
   waterCups: number;
 }
 
@@ -37,4 +38,14 @@ export interface ExerciseLog {
   exerciseName: string;
   duration: number;
   caloriesBurned: number;
+}
+
+export interface AiFoodLog {
+  name: string;
+  quantity: number;
+  serving_size: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
 }

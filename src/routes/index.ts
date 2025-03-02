@@ -8,6 +8,7 @@ import { WaterLogsRoutes } from './water-logs.routes';
 import { ExerciseLogsRoutes } from './exercise-logs.routes';
 import { WeightLogsRoutes } from './weight-logs.routes';
 import { AiMicroserviceRoutes } from './ai-microservice.routes';
+import { AiPrivateRoutes } from './ai-private.routes';
 
 export const initializeRoutes = (app: Application) => {
   app.get('/', (_req: Request, res: Response) => {
@@ -21,5 +22,6 @@ export const initializeRoutes = (app: Application) => {
   app.use('/exercise-logs', authJWT, new ExerciseLogsRoutes().getRouter());
   app.use('/weight-logs', authJWT, new WeightLogsRoutes().getRouter());
   app.use('/ai', authJWT, new AiMicroserviceRoutes().getRouter());
+  app.use('/ai-routes', new AiPrivateRoutes().getRouter());
   app.use('/users', new UserRoutes().getRouter());
 };
