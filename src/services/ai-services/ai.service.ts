@@ -4,8 +4,8 @@ import {
   FoodToolPrompt,
   IntroCoachPrompt,
 } from './prompt.constant';
-import { AiChatAnswer } from '../types';
-import { AiModel } from '../models';
+import { AiChatAnswer } from '../../types';
+import { AiModel } from '../../models';
 import { ToolsService } from './ai-tools.service';
 import { AiAgentService } from './ai-agent.service';
 import { AiMemoryService } from './ai-memory.service';

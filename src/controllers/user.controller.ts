@@ -14,10 +14,10 @@ export class UserController {
     this.targetsSc = new TargetsCalcService();
   }
 
-  login = async (
+  async login(
     email: string,
     password: string
-  ): Promise<string | { user: User; token: string; refreshToken: string }> => {
+  ): Promise<string | { user: User; token: string; refreshToken: string }> {
     console.log('arranca', email);
     const user = await this.userModel
       .getUserByEmail(email)
@@ -37,7 +37,7 @@ export class UserController {
         return { user, token, refreshToken };
       }
     }
-  };
+  }
 
   async hashtest(password: string) {
     const hashedPassword = await bcrypt.hash(password, 8);
@@ -51,11 +51,11 @@ export class UserController {
     return isMatch;
   }
 
-  signUp = async (
+  async signUp(
     email: string,
     password: string,
     profile: RegistrationData
-  ): Promise<{ user: User; token: string; refreshToken: string }> => {
+  ): Promise<{ user: User; token: string; refreshToken: string }> {
     const emailExists = await this.userModel.getUserByEmail(email);
     if (emailExists) {
       throw new Error('email taken');
@@ -77,13 +77,13 @@ export class UserController {
       throw new Error('Error saving new user');
     }
     return { user, token, refreshToken };
-  };
+  }
 
-  getUserById = async (id: string | ObjectId) => {
+  async getUserById(id: string | ObjectId) {
     return this.userModel.getUserById(id);
-  };
+  }
 
-  refreshAccessToken = async (oldRefreshToken: string) => {
+  async refreshAccessToken(oldRefreshToken: string) {
     try {
       const decoded: any = jwt.verify(
         oldRefreshToken,
@@ -99,9 +99,9 @@ export class UserController {
     } catch (error) {
       return 'token_invalid';
     }
-  };
+  }
 
-  createTokens = (id: string): { token: string; refreshToken: string } => {
+  createTokens(id: string): { token: string; refreshToken: string } {
     // Generate a new access token
     const token = jwt.sign(
       { id },
@@ -116,5 +116,16 @@ export class UserController {
       { expiresIn: '7d' } // expires in 7 days
     );
     return { token, refreshToken };
-  };
+  }
+
+  async updateUser(user: User) {
+    try {
+      if (!user) {
+        throw new Error('User is required for updating');
+      }
+      return this.userModel.editUser(user);
+    } catch (error) {
+      throw new Error('Error updating user');
+    }
+  }
 }

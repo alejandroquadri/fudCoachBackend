@@ -17,7 +17,10 @@ export class AiMicroserviceController {
     this.axiosInstance.defaults.baseURL = url;
   }
 
-  async getAiResponse(prompt: string, user_id: string): Promise<string> {
+  async getAiResponse(
+    prompt: string,
+    user_id: string
+  ): Promise<{ response: string }> {
     this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/process-prompt', {
       prompt,

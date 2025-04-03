@@ -7,7 +7,7 @@ import {
 import { MongoDBChatMessageHistory } from 'langchain/stores/message/mongodb';
 import { AIMessage, BaseMessage, HumanMessage } from 'langchain/schema';
 
-import { mongoInstance } from '../connection';
+import { mongoInstance } from '../../connection';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 
 export class AiMemoryService {

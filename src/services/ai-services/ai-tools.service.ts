@@ -1,6 +1,6 @@
 import { FoodToolPrompt } from './prompt.constant';
 import { DynamicTool } from 'langchain/tools';
-import { AiModel } from '../models';
+import { AiModel } from '../../models';
 
 export class ToolsService {
   aiModel: AiModel;

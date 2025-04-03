@@ -3,11 +3,11 @@ import { RegistrationData, TargetObj, User, UserWithoutId } from '../types';
 import { MongoService } from '../services'; // Import MongoService
 
 export class UserModel {
-  private mongoService: MongoService<User>;
+  private mongoSc: MongoService<User>;
 
   constructor() {
     // Instantiate the MongoService for the 'users' collection
-    this.mongoService = new MongoService<User>('users');
+    this.mongoSc = new MongoService<User>('users');
   }
 
   /**
@@ -45,7 +45,7 @@ export class UserModel {
     };
 
     // Use MongoService to insert the user and return the result
-    return this.mongoService.create(form);
+    return this.mongoSc.create(form);
   }
 
   /**
@@ -58,7 +58,7 @@ export class UserModel {
     const query = { email };
 
     // Use MongoService to find the user by email
-    return this.mongoService.findOne(query);
+    return this.mongoSc.findOne(query);
   }
 
   /**
@@ -69,6 +69,15 @@ export class UserModel {
   async getUserById(id: string | ObjectId): Promise<User | null> {
     id = typeof id === 'string' ? new ObjectId(id) : id;
     const query = { _id: id };
-    return this.mongoService.findOne(query);
+    return this.mongoSc.findOne(query);
+  }
+
+  async editUser(user: User) {
+    if (!user._id) {
+      throw new Error('User ID is required for editing');
+    }
+
+    const { _id, ...updateData } = user;
+    return this.mongoSc.update(_id, updateData);
   }
 }

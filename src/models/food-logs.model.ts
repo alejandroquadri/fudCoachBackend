@@ -9,7 +9,7 @@ export class FoodLogsModel {
     this.mongoSc = new MongoService<FoodLog>('foodLogs');
   }
 
-  createFoodLog = async (foodLog: OptionalId<FoodLog>) => {
+  async createFoodLog(foodLog: OptionalId<FoodLog>) {
     if (typeof foodLog._id === 'string') {
       foodLog._id = new ObjectId(foodLog._id);
     }
@@ -17,9 +17,9 @@ export class FoodLogsModel {
       foodLog.user_id = new ObjectId(foodLog.user_id);
     }
     return this.mongoSc.create(foodLog);
-  };
+  }
 
-  editFoodLog = async (foodLog: FoodLog) => {
+  async editFoodLog(foodLog: FoodLog) {
     // Ensure the food log has a valid _id
     if (!foodLog._id) {
       throw new Error('FoodLog must have an _id to be updated');
@@ -29,9 +29,9 @@ export class FoodLogsModel {
     const { _id, user_id, ...updateData } = foodLog;
 
     return this.mongoSc.update(_id, updateData);
-  };
+  }
 
-  deleteFoodLog = async (id: string | ObjectId) => {
+  async deleteFoodLog(id: string | ObjectId) {
     // Ensure the id is an ObjectId
     const objectId = typeof id === 'string' ? new ObjectId(id) : id;
 
@@ -52,12 +52,12 @@ export class FoodLogsModel {
         error,
       };
     }
-  };
+  }
 
-  getFoodLogsByDate = async (
+  async getFoodLogsByDate(
     userId: string | ObjectId,
     date: string
-  ): Promise<FoodLog[]> => {
+  ): Promise<FoodLog[]> {
     try {
       userId = typeof userId === 'string' ? new ObjectId(userId) : userId;
       const query = {
@@ -70,5 +70,5 @@ export class FoodLogsModel {
       console.error('Error getting food logs:', error);
       throw error;
     }
-  };
+  }
 }
