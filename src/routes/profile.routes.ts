@@ -15,10 +15,24 @@ export class ProfileRoutes {
 
   private initializeRoutes = () => {
     this.router.get('/', this.test);
+    this.router.post('/get', this.getUser);
     this.router.post('/update', this.updateProfile);
   };
 
   private test = (req: Request, res: Response) => res.send('Profile routes Ok');
+
+  private getUser = async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.body;
+    try {
+      if (!id) {
+        throw new Error('no id');
+      }
+      const user = await this.userController.getUserById(id);
+      res.status(200).json(user);
+    } catch (error) {
+      next(error);
+    }
+  };
 
   private updateProfile = async (
     req: Request,
