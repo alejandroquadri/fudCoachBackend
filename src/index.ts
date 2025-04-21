@@ -1,5 +1,6 @@
 import express, { Application } from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
 import { mongoInstance } from './connection';
 import { initializeMiddlewares } from './middlewares';
 import { initializePassportStrategy } from './strategies/jwtStrategy';
@@ -18,6 +19,10 @@ class App {
   public async start(port: number): Promise<void> {
     try {
       await this.connect(); // Ensure MongoDB is connected before anything else
+      this.app.use(
+        '/uploads',
+        express.static(path.join(__dirname, '../uploads'))
+      );
       this.initializeMiddlewares();
       this.initializePassport();
       this.initializeRoutes();
