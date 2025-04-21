@@ -37,4 +37,10 @@ export class CloudinaryService {
       Readable.from(buffer).pipe(stream);
     });
   }
+
+  async deleteImage(publicId: string): Promise<void> {
+    await cloudinary.uploader.destroy(`uploads/${publicId}`, {
+      resource_type: 'image',
+    });
+  }
 }
