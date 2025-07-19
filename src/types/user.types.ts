@@ -58,3 +58,41 @@ export interface AiUserPreferences {
   usual_dinner: string;
   usual_snack: string;
 }
+
+// nuevo user interface
+
+export interface UserProfile {
+  _id?: ObjectId | string;
+  name: string;
+  email: string;
+  password: string;
+  gender: string;
+  lifeStyle: number;
+  activityLevel: number;
+  triedOtherApps?: boolean;
+  unitType: 'metric' | 'imperial';
+  weight: number; // esto siempre lo voy a guardar en kg
+  height: number; // esto siempre lo voy a guardar en cm
+  birthdate: string; // un string del tipo YYYY-MM-DD
+  goal: number; // perder peso: 0 | ganar peso: 1 | mantenerme: 2
+  weightGoal: number; // siempre en kg
+  goalVelocity: number; // perdida de peso por semana
+  goalObstacle: number; // que te impide alcanzar tus metas
+  dietType: string; // tipo de dieta: clasico | vegano | vegetariano | paleo | etc
+  outcome: string; // ser mas saludabe | tener mas energia | etc
+  nutricionGoals: NutritionGoals;
+  weightLogs: Array<{ weightLog: number; date: Date }>;
+}
+
+export interface NutritionGoals {
+  tdee: number;
+  bmr: number;
+  dailyCaloricTarget: number;
+  dailyCarbsTarget: number;
+  dailyProteinTarget: number;
+  dailyFatTarget: number;
+}
+
+export interface OnboardingState extends UserProfile {
+  onboardingStep: number;
+}

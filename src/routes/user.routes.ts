@@ -1,6 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { UserController } from '../controllers';
-import { RegistrationData } from '../types';
+import { RegistrationData, UserProfile } from '../types';
 
 export class UserRoutes {
   private router: Router = express.Router();
@@ -12,38 +12,55 @@ export class UserRoutes {
   }
 
   private initializeRoutes(): void {
-    this.router.post('/signup', this.signUp);
+    // this.router.post('/signup', this.signUp);
     this.router.post('/login', this.login);
+    this.router.post('/register', this.register);
     this.router.post('/refreshToken', this.refreshToken);
     this.router.post('/getUserById', this.getUserByID);
+    this.router.post('/calculatePlan', this.calculatePlan);
   }
 
   public getRouter(): Router {
     return this.router;
   }
 
-  signUp = async (req: Request, res: Response, next: NextFunction) => {
+  register = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // const { email, password, profile } = req.body;
-      const { registrationData } = req.body as {
-        registrationData: RegistrationData;
-      };
-      console.log('esto es lo que llega', registrationData);
-      const userData = await this.userController.signUp(
-        registrationData.email,
-        registrationData.password,
-        registrationData
-      );
+      const { user } = req.body as { user: UserProfile };
+      console.log('me llega este user', user);
+      const userData = await this.userController.register(user);
       res.status(200).send({
         auth: true,
         user: userData.user,
         token: userData.token,
         refreshToken: userData.refreshToken,
       });
-    } catch (error: unknown) {
+    } catch (error) {
       next(error);
     }
   };
+
+  // signUp = async (req: Request, res: Response, next: NextFunction) => {
+  //   try {
+  //     const { registrationData } = req.body as {
+  //       registrationData: RegistrationData;
+  //     };
+  //     console.log('esto es lo que llega', registrationData);
+  //     const userData = await this.userController.signUp(
+  //       registrationData.email,
+  //       registrationData.password,
+  //       registrationData
+  //     );
+  //     res.status(200).send({
+  //       auth: true,
+  //       user: userData.user,
+  //       token: userData.token,
+  //       refreshToken: userData.refreshToken,
+  //     });
+  //   } catch (error: unknown) {
+  //     next(error);
+  //   }
+  // };
 
   login = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -97,6 +114,17 @@ export class UserRoutes {
     try {
       const user = await this.userController.getUserById(id);
       res.status(200).json({ user });
+    } catch (error: unknown) {
+      next(error);
+    }
+  };
+
+  calculatePlan = (req: Request, res: Response, next: NextFunction) => {
+    const { userData } = req.body;
+    console.log('me llega esta userd data:', userData);
+    try {
+      const plan = this.userController.calculatePlan(userData);
+      res.status(200).json(plan);
     } catch (error: unknown) {
       next(error);
     }

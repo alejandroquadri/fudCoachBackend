@@ -25,6 +25,10 @@ export class CoachController {
         message,
         userId
       );
+      // salvo mensage de usuario
+      const userMsg = this.buildUserMsg(message, userId, 'user');
+      await this.chatModel.saveMessage(userMsg);
+      // salvo mensaje de ai
       const aiChatMsg = this.buildUserMsg(aiAnswer.response, userId, 'ai');
       await this.chatModel.saveMessage(aiChatMsg);
       return aiChatMsg;

@@ -1,7 +1,13 @@
 import { UserModel } from '../models';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { RegistrationData, User } from '../types';
+import {
+  NutritionGoals,
+  OnboardingState,
+  RegistrationData,
+  User,
+  UserProfile,
+} from '../types';
 import { ObjectId } from 'mongodb';
 import { TargetsCalcService } from '../services';
 
@@ -17,7 +23,9 @@ export class UserController {
   async login(
     email: string,
     password: string
-  ): Promise<string | { user: User; token: string; refreshToken: string }> {
+  ): Promise<
+    string | { user: UserProfile; token: string; refreshToken: string }
+  > {
     console.log('arranca', email);
     const user = await this.userModel
       .getUserByEmail(email)
@@ -51,25 +59,46 @@ export class UserController {
     return isMatch;
   }
 
-  async signUp(
-    email: string,
-    password: string,
-    profile: RegistrationData
-  ): Promise<{ user: User; token: string; refreshToken: string }> {
-    const emailExists = await this.userModel.getUserByEmail(email);
+  // async signUp(
+  //   email: string,
+  //   password: string,
+  //   profile: RegistrationData
+  // ): Promise<{ user: User; token: string; refreshToken: string }> {
+  //   const emailExists = await this.userModel.getUserByEmail(email);
+  //   if (emailExists) {
+  //     throw new Error('email taken');
+  //   }
+  //   const hashedPassword = await bcrypt.hash(password, 8);
+  //   const targObj = this.targetsSc.buildTargetObj(profile);
+  //   console.log('esto vuelve de los calculos', targObj);
+  //
+  //   const insertedData = await this.userModel.createUser(
+  //     email,
+  //     hashedPassword,
+  //     profile,
+  //     targObj
+  //   );
+  //   const id = insertedData.insertedId;
+  //   const { token, refreshToken } = this.createTokens(id.toHexString());
+  //   const user = await this.getUserById(insertedData.insertedId.toHexString());
+  //   if (user === null) {
+  //     throw new Error('Error saving new user');
+  //   }
+  //   return { user, token, refreshToken };
+  // }
+
+  // TODO: aca tengo que hacer el nuevo register
+  async register(
+    userData: UserProfile
+  ): Promise<{ user: UserProfile; token: string; refreshToken: string }> {
+    const emailExists = await this.userModel.getUserByEmail(userData.email);
     if (emailExists) {
       throw new Error('email taken');
     }
-    const hashedPassword = await bcrypt.hash(password, 8);
-    const targObj = this.targetsSc.buildTargetObj(profile);
-    console.log('esto vuelve de los calculos', targObj);
+    const hashedPassword = await bcrypt.hash(userData.password, 8);
 
-    const insertedData = await this.userModel.createUser(
-      email,
-      hashedPassword,
-      profile,
-      targObj
-    );
+    userData.password = hashedPassword;
+    const insertedData = await this.userModel.createUser(userData);
     const id = insertedData.insertedId;
     const { token, refreshToken } = this.createTokens(id.toHexString());
     const user = await this.getUserById(insertedData.insertedId.toHexString());
@@ -127,5 +156,29 @@ export class UserController {
     } catch (error) {
       throw new Error('Error updating user');
     }
+  }
+
+  calculatePlan(userData: OnboardingState): NutritionGoals {
+    const bmr = this.targetsSc.getBmr(
+      userData.birthdate,
+      userData.weight,
+      userData.height,
+      userData.gender
+    );
+    const tdee = this.targetsSc.getTdee(bmr, userData.lifeStyle);
+    const dailyCaloricTarget = this.targetsSc.getDailyCaloricTarget(
+      tdee,
+      userData.goalVelocity
+    );
+    const macroTargets =
+      this.targetsSc.getMacroNutrientsTargets(dailyCaloricTarget);
+    return {
+      tdee,
+      bmr,
+      dailyCaloricTarget,
+      dailyCarbsTarget: macroTargets.carbs,
+      dailyFatTarget: macroTargets.fat,
+      dailyProteinTarget: macroTargets.protein,
+    };
   }
 }
