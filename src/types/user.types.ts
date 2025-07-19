@@ -71,7 +71,7 @@ export interface UserProfile {
   activityLevel: number;
   triedOtherApps?: boolean;
   unitType: 'metric' | 'imperial';
-  weight: number; // esto siempre lo voy a guardar en kg
+  initWeight: number; // esto siempre lo voy a guardar en kg
   height: number; // esto siempre lo voy a guardar en cm
   birthdate: string; // un string del tipo YYYY-MM-DD
   goal: number; // perder peso: 0 | ganar peso: 1 | mantenerme: 2

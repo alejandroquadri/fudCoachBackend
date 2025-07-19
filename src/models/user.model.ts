@@ -1,12 +1,6 @@
 import { ObjectId } from 'mongodb';
-import {
-  RegistrationData,
-  TargetObj,
-  User,
-  UserProfile,
-  UserWithoutId,
-} from '../types';
 import { MongoService } from '../services'; // Import MongoService
+import { User, UserProfile } from '../types';
 
 export class UserModel {
   private mongoSc = new MongoService<UserProfile>('users');
@@ -19,7 +13,7 @@ export class UserModel {
       ...user,
       weightLogs: [
         {
-          weightLog: Number(user.weight),
+          weightLog: Number(user.initWeight),
           date: new Date(),
         },
       ],

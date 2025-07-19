@@ -161,7 +161,7 @@ export class UserController {
   calculatePlan(userData: OnboardingState): NutritionGoals {
     const bmr = this.targetsSc.getBmr(
       userData.birthdate,
-      userData.weight,
+      userData.initWeight,
       userData.height,
       userData.gender
     );
