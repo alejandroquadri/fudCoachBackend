@@ -45,7 +45,7 @@ export class UserModel {
     return this.mongoSc.findOne(query);
   }
 
-  async editUser(user: User) {
+  async editUser(user: UserProfile) {
     if (!user._id) {
       throw new Error('User ID is required for editing');
     }

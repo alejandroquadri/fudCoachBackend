@@ -147,7 +147,7 @@ export class UserController {
     return { token, refreshToken };
   }
 
-  async updateUser(user: User) {
+  async updateUser(user: UserProfile) {
     try {
       if (!user) {
         throw new Error('User is required for updating');
