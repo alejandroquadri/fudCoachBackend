@@ -5,20 +5,10 @@ import { User, UserProfile } from '../types';
 export class UserModel {
   private mongoSc = new MongoService<UserProfile>('users');
 
-  // TODO: aca tengo que crear un nuevo register User similar al de arriba
   createUser(
     user: UserProfile
   ): Promise<{ acknowledged: boolean; insertedId: ObjectId }> {
-    const form = {
-      ...user,
-      weightLogs: [
-        {
-          weightLog: Number(user.initWeight),
-          date: new Date(),
-        },
-      ],
-    };
-    return this.mongoSc.create(form);
+    return this.mongoSc.create(user);
   }
 
   /**

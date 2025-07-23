@@ -78,10 +78,9 @@ export interface UserProfile {
   weightGoal: number; // siempre en kg
   goalVelocity: number; // perdida de peso por semana
   goalObstacle: number; // que te impide alcanzar tus metas
-  dietType: string; // tipo de dieta: clasico | vegano | vegetariano | paleo | etc
-  outcome: string; // ser mas saludabe | tener mas energia | etc
-  nutricionGoals: NutritionGoals;
-  weightLogs: Array<{ weightLog: number; date: Date }>;
+  dietType: number; // tipo de dieta: clasico | vegano | vegetariano | paleo | etc
+  outcome: number; // ser mas saludabe | tener mas energia | etc
+  nutritionGoals: NutritionGoals;
 }
 
 export interface NutritionGoals {
