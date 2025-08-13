@@ -39,7 +39,7 @@ export class AiPrivateRoutes {
         throw new Error('no user id');
       }
 
-      const results = await this.foodLogsController.crateAiFoodLog(
+      const results = await this.foodLogsController.createAiFoodLog(
         meal_obj,
         user_id
       );

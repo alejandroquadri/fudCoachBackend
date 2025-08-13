@@ -8,7 +8,6 @@ import {
   Sort,
   UpdateResult,
   DeleteResult,
-  UpdateFilter,
 } from 'mongodb';
 import { mongoInstance } from '../connection';
 

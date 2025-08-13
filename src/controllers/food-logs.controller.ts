@@ -4,11 +4,7 @@ import { AiFoodLog, FoodLog } from '../types';
 import { format } from 'date-fns';
 
 export class FoodLogsController {
-  foodLogsModel: FoodLogsModel;
-
-  constructor() {
-    this.foodLogsModel = new FoodLogsModel();
-  }
+  foodLogsModel: FoodLogsModel = new FoodLogsModel();
 
   async getFoodLogsByDate(userId: string, date: string): Promise<FoodLog[]> {
     try {
@@ -30,7 +26,7 @@ export class FoodLogsController {
     }
   }
 
-  async crateAiFoodLog(
+  async createAiFoodLog(
     aiFoodLogs: AiFoodLog[],
     userId: string
   ): Promise<
@@ -44,8 +40,6 @@ export class FoodLogsController {
         aiFoodLogs.map(aiFoodLog => {
           const foodLog: FoodLog = {
             user_id: userId,
-            date: format(new Date(), 'yyyy-MM-dd'),
-            hour: format(new Date(), 'hh:mm'),
             foodObj: {
               foodName: aiFoodLog.name,
               servings: aiFoodLog.quantity,

@@ -5,8 +5,6 @@ export interface FoodLog {
   user_id: string | ObjectId;
   createdAt?: Date; // timestamp when log was created
   updatedAt?: Date; // timestamp when log was updated
-  date: string; // date the food was consumed
-  hour: string; // hour the food was consumed
   foodObj: {
     foodName: string;
     servings: number;

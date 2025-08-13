@@ -40,28 +40,6 @@ export class UserRoutes {
     }
   };
 
-  // signUp = async (req: Request, res: Response, next: NextFunction) => {
-  //   try {
-  //     const { registrationData } = req.body as {
-  //       registrationData: RegistrationData;
-  //     };
-  //     console.log('esto es lo que llega', registrationData);
-  //     const userData = await this.userController.signUp(
-  //       registrationData.email,
-  //       registrationData.password,
-  //       registrationData
-  //     );
-  //     res.status(200).send({
-  //       auth: true,
-  //       user: userData.user,
-  //       token: userData.token,
-  //       refreshToken: userData.refreshToken,
-  //     });
-  //   } catch (error: unknown) {
-  //     next(error);
-  //   }
-  // };
-
   login = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password } = req.body;
