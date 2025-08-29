@@ -14,6 +14,7 @@ export class NotificationRoutes {
   private initializeRoutes = () => {
     this.router.get('/', this.test);
     this.router.post('/save-token', this.saveNotificationToken);
+    this.router.post('/send', this.sendNotification);
     // Add more routes as needed
   };
 
@@ -37,6 +38,29 @@ export class NotificationRoutes {
       res
         .status(200)
         .json({ message: 'Notification token saved successfully', result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private sendNotification = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { userId, title, body, data, env } = req.body || {};
+      if (!userId || !body) {
+        return res
+          .status(400)
+          .json({ message: 'userId and body are required' });
+      }
+      const out = await this.notificationController.sendNotificationToUser(
+        userId,
+        { title, body, data },
+        env
+      );
+      res.status(200).json(out);
     } catch (error) {
       next(error);
     }

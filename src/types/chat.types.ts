@@ -11,3 +11,8 @@ export interface AiChatAnswer {
   output: 'string';
   intermediateSteps: Array<void | unknown>;
 }
+
+export interface AiState {
+  messages: string[];
+  preferences: Record<string, number | string | boolean>;
+}

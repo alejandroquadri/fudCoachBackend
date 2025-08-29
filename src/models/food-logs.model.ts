@@ -1,6 +1,9 @@
 import { ObjectId, OptionalId } from 'mongodb';
 import { FoodLog } from '../types';
 import { MongoService } from '../services';
+import { startOfDay, endOfDay, addDays, format, parseISO } from 'date-fns';
+import { fromZonedTime } from 'date-fns-tz';
+const TZ = 'America/Argentina/Buenos_Aires';
 
 export class FoodLogsModel {
   collectionName = 'foodLogs';
@@ -56,16 +59,25 @@ export class FoodLogsModel {
 
   async getFoodLogsByDate(
     userId: string | ObjectId,
-    date: string
+    dateISO: string // "YYYY-MM-DD" in the user's local calendar
   ): Promise<FoodLog[]> {
     try {
-      userId = typeof userId === 'string' ? new ObjectId(userId) : userId;
+      const objectId =
+        typeof userId === 'string' ? new ObjectId(userId) : userId;
+
+      // Build the next day's ISO string safely (no local/UTC ambiguity)
+      const nextISO = format(addDays(parseISO(dateISO), 1), 'yyyy-MM-dd');
+
+      // Convert local midnights to UTC instants for MongoDB
+      const utcStart = fromZonedTime(`${dateISO}T00:00:00`, TZ);
+      const utcEnd = fromZonedTime(`${nextISO}T00:00:00`, TZ);
+
       const query = {
-        user_id: userId,
-        date,
+        user_id: objectId,
+        createdAt: { $gte: utcStart, $lt: utcEnd }, // half-open range
       };
 
-      return this.mongoSc.find(query, { sort: { date: 1 } });
+      return this.mongoSc.find(query, { sort: { createdAt: 1 } });
     } catch (error) {
       console.error('Error getting food logs:', error);
       throw error;

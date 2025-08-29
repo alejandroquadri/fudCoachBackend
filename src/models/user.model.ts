@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { MongoService } from '../services'; // Import MongoService
-import { User, UserProfile } from '../types';
+import { AiProfile, UserProfile } from '../types';
 
 export class UserModel {
   private mongoSc = new MongoService<UserProfile>('users');
@@ -35,7 +35,7 @@ export class UserModel {
     return this.mongoSc.findOne(query);
   }
 
-  async editUser(user: UserProfile) {
+  async editUser(user: UserProfile | (AiProfile & { _id: string })) {
     if (!user._id) {
       throw new Error('User ID is required for editing');
     }

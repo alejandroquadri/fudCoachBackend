@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
-import { AiUserPreferences } from '../types';
+import FormData from 'form-data';
+import { AiProfile, AiUserPreferences } from '../types';
 
 export class AiMicroserviceController {
   private axiosInstance: AxiosInstance;
@@ -29,6 +30,27 @@ export class AiMicroserviceController {
     return response.data;
   }
 
+  async parseImage(
+    userId: string,
+    image: Buffer
+  ): Promise<{ response: string }> {
+    // Forward to the AI microservice as multipart binary (NOT base64 here)
+    const fd = new FormData();
+    fd.append('user_id', userId);
+    fd.append('image', image, {
+      filename: `mobile_${Date.now()}.jpg`,
+      contentType: 'image/jpeg',
+    });
+    this.setBaseUrl(this.baseURL);
+    const response = await this.axiosInstance.post('/parse-image', fd, {
+      headers: fd.getHeaders(),
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 20000,
+    });
+    return response.data;
+  }
+
   async getMessages(userId: string) {
     this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/get-conversation', {
@@ -37,7 +59,7 @@ export class AiMicroserviceController {
     return response.data;
   }
 
-  async initStatePreferences(userId: string, preferences: AiUserPreferences) {
+  async initStatePreferences(userId: string, preferences: AiProfile) {
     this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/init-user-preferences', {
       user_id: userId,

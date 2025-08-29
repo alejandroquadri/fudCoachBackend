@@ -2,27 +2,35 @@ import express, { Router, Request, Response, NextFunction } from 'express';
 import { CoachController } from '../controllers';
 import { AiAgent, FatSecretService } from './../services';
 import multer from 'multer';
+import { UserProfile } from '../types';
 
 interface MulterRequest extends Request {
-  file: Express.Multer.File;
+  file?: Express.Multer.File;
 }
 
 export class CoachRoutes {
   private router: Router = express.Router();
-  private aiController: CoachController;
-  private aiAgent: AiAgent;
-  private fatSecretSc: FatSecretService;
-  private upload = multer();
+  private coachController: CoachController = new CoachController();
+  private aiAgent: AiAgent = new AiAgent();
+  private fatSecretSc: FatSecretService = new FatSecretService();
+  // Use memoryStorage so we get file.buffer directly
+  private upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB cap, adjust as needed
+    fileFilter: (_req, file, cb) => {
+      const ok = /^image\/(jpe?g|png|heic|webp)$/i.test(file.mimetype);
+      if (!ok) return cb(new Error('Only image uploads are allowed'));
+      cb(null, true);
+    },
+  });
 
   constructor() {
     this.initializeRoutes();
-    this.aiController = new CoachController();
-    this.aiAgent = new AiAgent();
-    this.fatSecretSc = new FatSecretService();
   }
 
   private initializeRoutes = () => {
     this.router.get('/', this.testCoach);
+    this.router.post('/init-user-preferences', this.initUserPreferences);
     this.router.post('/get-answer', this.coachAnswer);
     this.router.post(
       '/parse-image',
@@ -40,6 +48,28 @@ export class CoachRoutes {
   private testCoach = (req: Request, res: Response) =>
     res.send('Coach routes Ok');
 
+  private initUserPreferences = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userProfile }: { userProfile: UserProfile } = req.body;
+    try {
+      if (!userProfile) {
+        throw new Error('no userProfile');
+      }
+      console.log('llega user profile', userProfile);
+      const { _id, email, password, ...aiProfile } = userProfile;
+      const state = await this.coachController.initUserPreferences(
+        userProfile._id as string,
+        aiProfile
+      );
+      res.status(200).json(state);
+    } catch (error: unknown) {
+      next(error);
+    }
+  };
+
   private coachAnswer = async (
     req: Request,
     res: Response,
@@ -54,7 +84,7 @@ export class CoachRoutes {
       if (typeof message !== 'string') {
         throw new Error('message is not a string');
       }
-      const answer = await this.aiController.coachResponse(message, userId);
+      const answer = await this.coachController.coachResponse(message, userId);
       res.status(200).json(answer);
     } catch (error: unknown) {
       next(error);
@@ -62,7 +92,7 @@ export class CoachRoutes {
   };
 
   private parseImage = async (
-    req: Request,
+    req: MulterRequest,
     res: Response,
     next: NextFunction
   ) => {
@@ -79,13 +109,12 @@ export class CoachRoutes {
       }
 
       console.log('Received image from user:', userId);
-      console.log('Image type:', file.mimetype);
-      console.log('Image size:', file.size, 'bytes');
+      console.log('Image size:', file.size);
 
       // 👇 Use the imageBase64 or imageUrl with your AI tool
-      const answer = await this.aiController.parseImage(file, userId);
-
+      const answer = await this.coachController.parseImage(file, userId);
       res.status(200).json(answer);
+      res.status(200).json({ answer: 'mok' });
     } catch (error: unknown) {
       next(error);
     }

@@ -1,5 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { AiMicroserviceController } from '../controllers';
+import { AiProfile, UserProfile } from '../types';
 
 export class AiMicroserviceRoutes {
   private router: Router = express.Router();
@@ -13,6 +14,8 @@ export class AiMicroserviceRoutes {
     return this.router;
   };
 
+  // NOTE: Estas rutas no las estoy usando desde la app.
+  // Las que soy usando son las de coach.routes.ts
   private initializeRoutes(): void {
     this.router.get('/', this.test);
     this.router.post('/get-answer', this.getAiResponse);
@@ -44,37 +47,21 @@ export class AiMicroserviceRoutes {
     }
   };
 
-  private getMessages = (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req.body;
-    console.log('llega a getMsgs', userId);
-    try {
-      if (!userId) {
-        throw new Error('no user id');
-      }
-      console.log('pido mensajes');
-      const messages = this.microserviceCtrl.getMessages(userId);
-      res.status(200).json(messages);
-    } catch (error: unknown) {
-      next(error);
-    }
-  };
-
-  private initUserPreferences = (
+  private initUserPreferences = async (
     req: Request,
     res: Response,
     next: NextFunction
   ) => {
-    const { userId, preferences } = req.body;
+    const { userProfile }: { userProfile: UserProfile } = req.body;
     try {
-      if (!userId) {
-        throw new Error('no user id');
+      if (!userProfile) {
+        throw new Error('no userProfile');
       }
-      if (!preferences) {
-        throw new Error('no preferences');
-      }
-      const state = this.microserviceCtrl.initStatePreferences(
-        userId,
-        preferences
+      console.log('llega user profile', userProfile);
+      const { _id, email, password, ...aiProfile } = userProfile;
+      const state = await this.microserviceCtrl.initStatePreferences(
+        userProfile._id as string,
+        aiProfile
       );
       res.status(200).json(state);
     } catch (error: unknown) {

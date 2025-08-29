@@ -1,12 +1,17 @@
 import express, { NextFunction, Request, Response, Router } from 'express';
-import { FoodLogsController, WeightLogsController } from '../controllers';
-import { AiFoodLog } from '../types';
+import {
+  FoodLogsController,
+  UserController,
+  WeightLogsController,
+} from '../controllers';
+import { AiFoodLog, AiProfile, AiUserPreferences, UserProfile } from '../types';
 
 export class AiPrivateRoutes {
   private router: Router = express.Router();
   private foodLogsController: FoodLogsController = new FoodLogsController();
   private weightLogsController: WeightLogsController =
     new WeightLogsController();
+  private userController: UserController = new UserController();
 
   constructor() {
     this.initilizeRoutes();
@@ -19,6 +24,7 @@ export class AiPrivateRoutes {
     this.router.get('/', this.test);
     this.router.post('/add-food-log', this.addFoodLog);
     this.router.post('/add-weight-log', this.addWeightLog);
+    this.router.post('/update-preferences', this.updatePreferences);
   }
 
   private test = (_req: Request, res: Response) =>
@@ -69,6 +75,28 @@ export class AiPrivateRoutes {
       );
       console.log(weight, results);
       res.status(200).json({ res: 'Weight Added' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private updatePreferences = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    // payload = {"preferences": tool_input["preferences"], "user_id": user_id}
+    const {
+      preferences,
+      user_id,
+    }: { preferences: AiProfile; user_id: string } = req.body;
+    try {
+      // something
+      const userPreferences = { _id: user_id, ...preferences };
+
+      const response = await this.userController.updateUser(userPreferences);
+      console.log(response);
+      res.status(200).json({ res: 'Profile updated' });
     } catch (error) {
       next(error);
     }

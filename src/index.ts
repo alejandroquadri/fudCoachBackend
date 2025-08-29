@@ -59,6 +59,7 @@ class App {
   }
 }
 
+console.log('env', process.env.NODE_ENV);
 const app = new App();
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '0.0.0.0'; // bind on all interfaces

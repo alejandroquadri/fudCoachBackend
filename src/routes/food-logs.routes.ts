@@ -30,6 +30,7 @@ export class FoodLogsRoutes {
     next: NextFunction
   ) => {
     const { user_id, date } = req.body;
+    console.log(date);
     try {
       if (!user_id) {
         throw new Error('no user id');

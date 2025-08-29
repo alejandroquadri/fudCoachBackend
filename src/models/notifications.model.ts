@@ -18,11 +18,15 @@ export class NotificationsModel {
 
   /** Create a new token document (one document per unique token) */
   async createToken(payload: SaveNotificationTokenPayload) {
+    const env: 'dev' | 'prod' =
+      process.env.NODE_ENV === 'production' ? 'prod' : 'dev';
+
     const doc: Omit<PushTokenDoc, '_id' | 'createdAt' | 'updatedAt'> = {
       userId: new ObjectId(payload.userId),
       token: payload.token,
       platform: payload.platform,
       deviceId: payload.deviceId,
+      env,
       appId: payload.appId,
       disabled: false,
       lastError: null,
@@ -46,11 +50,15 @@ export class NotificationsModel {
       throw new Error('Token not found');
     }
 
+    const env: 'dev' | 'prod' =
+      process.env.NODE_ENV === 'production' ? 'prod' : 'dev';
+
     await this.mongoSc.update(existing._id, {
       userId: new ObjectId(updates.userId),
       platform: updates.platform,
       deviceId: updates.deviceId,
       appId: updates.appId,
+      env,
       disabled: false,
       lastError: null,
       // updatedAt is added by MongoService.update
@@ -74,5 +82,48 @@ export class NotificationsModel {
       });
     }
     return this.createToken(payload);
+  }
+
+  // ---------- Reads for sending ----------
+
+  async listActiveTokensForUser(userId: string, env: 'dev' | 'prod') {
+    const docs = await this.mongoSc.find({
+      userId: new ObjectId(userId),
+      disabled: { $ne: true },
+      env,
+    });
+    return docs.map(d => d.token);
+  }
+
+  // ---------- Post-send bookkeeping ----------
+
+  async markTokensSent(tokens: string[]) {
+    if (!tokens.length) return;
+    const docs = await this.mongoSc.find({ token: { $in: tokens } });
+    await Promise.all(
+      docs.map(d =>
+        this.mongoSc.update(d._id, {
+          lastSentAt: new Date(),
+          lastError: null,
+        } as Partial<PushTokenDoc>)
+      )
+    );
+  }
+
+  async disableToken(token: string, reason: string) {
+    const existing = await this.getByToken(token);
+    if (!existing) return;
+    await this.mongoSc.update(existing._id, {
+      disabled: true,
+      lastError: reason,
+    } as Partial<PushTokenDoc>);
+  }
+
+  async setTokenLastError(token: string, message: string) {
+    const existing = await this.getByToken(token);
+    if (!existing) return;
+    await this.mongoSc.update(existing._id, {
+      lastError: message,
+    } as Partial<PushTokenDoc>);
   }
 }
