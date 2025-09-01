@@ -5,8 +5,7 @@ import { mongoInstance } from './connection';
 import { initializeMiddlewares } from './middlewares';
 import { initializePassportStrategy } from './strategies/jwtStrategy';
 import { initializeRoutes } from './routes';
-import { stopAgenda } from './jobs/agenda';
-import { registerNotificationJobs } from './jobs/notification.engine';
+import { stopAgenda, registerNotificationJobs } from './jobs';
 
 dotenv.config();
 

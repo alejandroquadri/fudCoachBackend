@@ -1,16 +1,12 @@
-import {
-  cancelUserJob,
-  scheduleUserDailyJob,
-} from '../jobs/notification.engine';
+import { cancelUserJob, scheduleUserDailyJob } from '../jobs';
 import { NotificationSettingsModel, NotificationsTokensModel } from '../models';
 import { PushNotificationsService } from '../services';
 import {
   CreateJobPayload,
-  NotificationKey,
   PushPayload,
   SaveNotificationTokenPayload,
   UpdateJobPayload,
-} from '../types/notification.types';
+} from '../types';
 
 export class NotificationController {
   notTokenModel: NotificationsTokensModel = new NotificationsTokensModel();

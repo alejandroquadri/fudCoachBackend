@@ -104,6 +104,7 @@ export class NotificationRoutes {
   ) => {
     try {
       const { userId, key, enabled, hourLocal, timezone } = req.body || {};
+      console.log('llega update not job', userId, key);
       if (!userId || !key) {
         return res.status(400).json({ message: 'userId and key are required' });
       }
