@@ -5,6 +5,8 @@ import { mongoInstance } from './connection';
 import { initializeMiddlewares } from './middlewares';
 import { initializePassportStrategy } from './strategies/jwtStrategy';
 import { initializeRoutes } from './routes';
+import { stopAgenda } from './jobs/agenda';
+import { registerNotificationJobs } from './jobs/notification.engine';
 
 dotenv.config();
 
@@ -19,6 +21,10 @@ class App {
   public async start(port: number, host = '0.0.0.0'): Promise<void> {
     try {
       await this.connect(); // Ensure MongoDB is connected before anything else
+
+      //  define Agenda jobs then start worker
+      registerNotificationJobs(); // definitions first
+
       this.app.use(
         '/uploads',
         express.static(path.join(__dirname, '../uploads'))
@@ -29,6 +35,17 @@ class App {
 
       this.app.listen(port, host, () => {
         console.log(`Server is running on port ${port}`);
+      });
+
+      //  graceful shutdown (keep your existing handler if you already have one)
+      ['SIGINT', 'SIGTERM'].forEach(sig => {
+        process.on(sig as NodeJS.Signals, async () => {
+          try {
+            await stopAgenda();
+          } finally {
+            process.exit(0);
+          }
+        });
       });
     } catch (error) {
       console.error('Failed to start the application:', error);

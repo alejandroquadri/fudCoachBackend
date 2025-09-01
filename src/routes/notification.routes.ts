@@ -15,6 +15,8 @@ export class NotificationRoutes {
     this.router.get('/', this.test);
     this.router.post('/save-token', this.saveNotificationToken);
     this.router.post('/send', this.sendNotification);
+    this.router.post('/create-not-job', this.createJob);
+    this.router.post('/update-not-job', this.updateJob);
     // Add more routes as needed
   };
 
@@ -60,6 +62,58 @@ export class NotificationRoutes {
         { title, body, data },
         env
       );
+      res.status(200).json(out);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ========== NEW ENDPOINTS ==========
+
+  // 1. Create notification job (idempotent)
+  private createJob = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { userId, key, hourLocal, timezone, enabled } = req.body;
+      if (!userId || !key || !hourLocal || !timezone) {
+        return res
+          .status(400)
+          .json({ message: 'userId, key, hourLocal, timezone are required' });
+      }
+      const out = await this.notificationController.createJob({
+        userId,
+        key,
+        hourLocal,
+        timezone,
+        enabled,
+      });
+      res.status(200).json(out);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // 2. Update notification job (enable/disable and/or change time)
+  private updateJob = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { userId, key, enabled, hourLocal, timezone } = req.body || {};
+      if (!userId || !key) {
+        return res.status(400).json({ message: 'userId and key are required' });
+      }
+      const out = await this.notificationController.updateJob({
+        userId,
+        key,
+        enabled,
+        hourLocal,
+        timezone,
+      });
       res.status(200).json(out);
     } catch (error) {
       next(error);

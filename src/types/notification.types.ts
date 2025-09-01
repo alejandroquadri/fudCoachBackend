@@ -41,3 +41,35 @@ export type SendResult = {
   invalidTokens: string[]; // tokens to disable (DeviceNotRegistered)
   tokenErrors: Record<string, string>; // token -> lastError text (non-fatal)
 };
+
+export type NotificationKey =
+  | 'dailyPlanner'
+  | 'lunchLogReminder'
+  | 'dinnerLogReminder';
+
+export interface NotificationSettingDoc {
+  _id?: ObjectId;
+  userId: ObjectId;
+  key: NotificationKey; // one doc per user+key
+  enabled: boolean;
+  hourLocal: string; // "HH:mm" in user's local time
+  timezone: string; // IANA TZ, e.g. "America/Argentina/Buenos_Aires"
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface CreateJobPayload {
+  userId: string;
+  key: NotificationKey;
+  hourLocal: string; // "HH:mm"
+  timezone: string; // IANA, required on create
+  enabled?: boolean; // default false
+}
+
+export interface UpdateJobPayload {
+  userId: string;
+  key: NotificationKey;
+  enabled?: boolean; // optional
+  hourLocal?: string; // optional "HH:mm"
+  timezone?: string; // optional (change zone)
+}

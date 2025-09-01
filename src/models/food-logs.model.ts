@@ -1,8 +1,8 @@
-import { ObjectId, OptionalId } from 'mongodb';
-import { FoodLog } from '../types';
-import { MongoService } from '../services';
-import { startOfDay, endOfDay, addDays, format, parseISO } from 'date-fns';
+import { addDays, format, parseISO } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
+import { ObjectId, OptionalId } from 'mongodb';
+import { MongoService } from '../services';
+import { FoodLog } from '../types';
 const TZ = 'America/Argentina/Buenos_Aires';
 
 export class FoodLogsModel {

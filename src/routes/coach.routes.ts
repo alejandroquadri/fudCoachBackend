@@ -58,7 +58,6 @@ export class CoachRoutes {
       if (!userProfile) {
         throw new Error('no userProfile');
       }
-      console.log('llega user profile', userProfile);
       const { _id, email, password, ...aiProfile } = userProfile;
       const state = await this.coachController.initUserPreferences(
         userProfile._id as string,
@@ -114,7 +113,6 @@ export class CoachRoutes {
       // 👇 Use the imageBase64 or imageUrl with your AI tool
       const answer = await this.coachController.parseImage(file, userId);
       res.status(200).json(answer);
-      res.status(200).json({ answer: 'mok' });
     } catch (error: unknown) {
       next(error);
     }

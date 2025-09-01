@@ -4,11 +4,7 @@ import { WaterLog } from '../types';
 
 export class WaterLogsModel {
   collectionName = 'water-logs';
-  mongoSc: MongoService<WaterLog>;
-
-  constructor() {
-    this.mongoSc = new MongoService<WaterLog>('waterLogs');
-  }
+  mongoSc: MongoService<WaterLog> = new MongoService<WaterLog>('waterLogs');
 
   upsertWaterLog(waterLog: WaterLog) {
     // Ensure user_id is an ObjectId

@@ -1,11 +1,8 @@
 import { ObjectId } from 'mongodb';
 import { MongoService } from '../services';
-import {
-  PushTokenDoc,
-  SaveNotificationTokenPayload,
-} from '../types/notification.types';
+import { PushTokenDoc, SaveNotificationTokenPayload } from '../types';
 
-export class NotificationsModel {
+export class NotificationsTokensModel {
   collectionName = 'pushTokens';
   mongoSc: MongoService<PushTokenDoc> = new MongoService<PushTokenDoc>(
     this.collectionName

@@ -5,4 +5,5 @@ export * from './food-logs.model';
 export * from './water-logs.model';
 export * from './exercise-logs.model';
 export * from './weight-logs.model';
-export * from './notifications.model';
+export * from './not-token.model';
+export * from './not-settings.model';
