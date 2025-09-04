@@ -83,18 +83,24 @@ export class NotificationController {
 
     // read current settings (to fill missing fields)
     const current = await this.notSettingModel.get(userId, key);
+    if (!current) {
+      throw Error('could not find nottification setting to update');
+    }
 
     const nextEnabled =
-      typeof enabled === 'boolean' ? enabled : Boolean(current?.enabled);
+      typeof enabled === 'boolean' ? enabled : Boolean(current.enabled);
+    console.log(nextEnabled, 'es boolean', typeof enabled === 'boolean');
     const nextHour = hourLocal ?? current?.hourLocal ?? '08:00';
     const nextZone =
       timezone ?? current?.timezone ?? 'America/Argentina/Buenos_Aires';
 
     // persist changes
     await this.notSettingModel.upsert(userId, key, {
-      ...(typeof enabled === 'boolean' ? { enabled } : {}),
-      ...(hourLocal ? { hourLocal } : {}),
-      ...(timezone ? { timezone } : {}),
+      ...(typeof enabled === 'boolean'
+        ? { enabled }
+        : { enabled: current.enabled }),
+      ...(hourLocal ? { hourLocal } : { hourLocal: current.hourLocal }),
+      ...(timezone ? { timezone } : { timezone: current.timezone }),
     });
 
     // resync agenda job
