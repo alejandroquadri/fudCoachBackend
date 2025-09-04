@@ -3,11 +3,9 @@ import { MongoService } from '../services/mongo.service'; // Import MongoService
 import { ChatMsg } from '../types';
 
 export class ChatModel {
-  private mongoService: MongoService<ChatMsg>;
-
-  constructor() {
-    this.mongoService = new MongoService<ChatMsg>('chatMessages');
-  }
+  private mongoService: MongoService<ChatMsg> = new MongoService<ChatMsg>(
+    'chatMessages'
+  );
 
   /**
    * Save a new message from the user or AI.

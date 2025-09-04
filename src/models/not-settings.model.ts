@@ -1,4 +1,3 @@
-// models/notificationSettings.model.ts
 import { ObjectId } from 'mongodb';
 import { MongoService } from '../services';
 import { NotificationSettingDoc, NotificationKey } from '../types';
@@ -11,6 +10,11 @@ export class NotificationSettingsModel {
   async get(userId: string | ObjectId, key: NotificationKey) {
     const _id = typeof userId === 'string' ? new ObjectId(userId) : userId;
     return this.mongoSc.findOne({ userId: _id, key });
+  }
+
+  async getNotificationsByUser(userId: string | ObjectId) {
+    const query = { userId: new ObjectId(userId) };
+    return this.mongoSc.find(query, { sort: { timestamp: -1 } });
   }
 
   async upsert(
