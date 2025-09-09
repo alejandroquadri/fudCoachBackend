@@ -2,6 +2,12 @@ import { ObjectId } from 'mongodb';
 import { MongoService } from '../services';
 import { NotificationSettingDoc, NotificationKey } from '../types';
 
+const NOTIFICATION_KEYS = [
+  'dailyPlanner',
+  'lunchLogReminder',
+  'dinnerLogReminder',
+];
+
 export class NotificationSettingsModel {
   private mongoSc = new MongoService<NotificationSettingDoc>(
     'notificationSettings'
@@ -12,7 +18,9 @@ export class NotificationSettingsModel {
     return this.mongoSc.findOne({ userId: _id, key });
   }
 
-  async getNotificationsByUser(userId: string | ObjectId) {
+  async getNotificationsByUser(
+    userId: string | ObjectId
+  ): Promise<NotificationSettingDoc[]> {
     const query = { userId: new ObjectId(userId) };
     return this.mongoSc.find(query, { sort: { timestamp: -1 } });
   }
@@ -22,7 +30,6 @@ export class NotificationSettingsModel {
     key: NotificationKey,
     patch: Partial<NotificationSettingDoc>
   ) {
-    console.log('arranco upsert');
     const _id = typeof userId === 'string' ? new ObjectId(userId) : userId;
 
     const filter = { userId: _id, key };
@@ -36,6 +43,7 @@ export class NotificationSettingsModel {
       },
       $setOnInsert: {
         userId: _id,
+        key,
         createdAt: new Date(),
       },
     } as Partial<NotificationSettingDoc>;
@@ -43,35 +51,7 @@ export class NotificationSettingsModel {
     console.log('mando filter y update');
     return this.mongoSc.upsert(filter, update);
   }
-}
 
-// async upsert(
-//   userId: string,
-//   key: NotificationKey,
-//   patch: Partial<NotificationSettingDoc>
-// ) {
-//   const _id = new ObjectId(userId);
-//
-//   // Check if it already exists to decide whether to apply defaults
-//   const existing = await this.mongoSc.findOne({ userId: _id, key });
-//
-//   const defaultsOnInsert: Partial<NotificationSettingDoc> = existing
-//     ? {}
-//     : {
-//         enabled: false,
-//         hourLocal: '08:00',
-//         timezone: 'America/Argentina/Buenos_Aires',
-//         createdAt: new Date(),
-//       };
-//
-//   // IMPORTANT: pass a plain doc (MongoService.upsert will $set internally)
-//   const doc: Partial<NotificationSettingDoc> = {
-//     userId: _id,
-//     key,
-//     ...defaultsOnInsert,
-//     ...patch,
-//     updatedAt: new Date(),
-//   };
-//
-//   return this.mongoSc.upsert({ userId: _id, key }, doc);
-// }
+  isNotificationKey = (k: string): k is NotificationKey =>
+    (NOTIFICATION_KEYS as readonly string[]).includes(k);
+}

@@ -17,6 +17,7 @@ export class NotificationRoutes {
     this.router.post('/send', this.sendNotification);
     this.router.post('/create-not-job', this.createJob);
     this.router.post('/update-not-job', this.updateJob);
+    this.router.post('/get-not-settings', this.getNotificationsSettingsByUser);
     // Add more routes as needed
   };
 
@@ -115,6 +116,21 @@ export class NotificationRoutes {
         timezone,
       });
       res.status(200).json(out);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private getNotificationsSettingsByUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { userId } = req.body;
+      const notSettings =
+        await this.notificationController.getNotificationsByUser(userId);
+      res.status(200).json(notSettings);
     } catch (error) {
       next(error);
     }

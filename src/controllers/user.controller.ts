@@ -37,7 +37,6 @@ export class UserController {
       if (!isMatch) {
         return 'invalid_credentials';
       } else {
-        console.log('llego hasta aca');
         const { token, refreshToken } = this.createTokens(user._id as string);
         return { user, token, refreshToken };
       }

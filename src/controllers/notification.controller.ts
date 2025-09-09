@@ -3,6 +3,8 @@ import { NotificationSettingsModel, NotificationsTokensModel } from '../models';
 import { PushNotificationsService } from '../services';
 import {
   CreateJobPayload,
+  NotificationKey,
+  NotificationSettingDoc,
   PushPayload,
   SaveNotificationTokenPayload,
   UpdateJobPayload,
@@ -56,6 +58,33 @@ export class NotificationController {
     };
   }
 
+  // get notification settings
+  async getNotificationsByUserOld(
+    userId: string
+  ): Promise<NotificationSettingDoc[]> {
+    const settingsArr = await this.notSettingModel.getNotificationsByUser(
+      userId
+    );
+    return settingsArr;
+  }
+
+  async getNotificationsByUser(
+    userId: string
+  ): Promise<Partial<Record<NotificationKey, NotificationSettingDoc>>> {
+    const settingsArr: NotificationSettingDoc[] =
+      await this.notSettingModel.getNotificationsByUser(userId);
+
+    const byKey = settingsArr.reduce<
+      Partial<Record<NotificationKey, NotificationSettingDoc>>
+    >((acc, doc) => {
+      // guard in case DB has unexpected keys
+      if (this.notSettingModel.isNotificationKey(doc.key)) acc[doc.key] = doc;
+      return acc;
+    }, {});
+
+    return byKey;
+  }
+
   // create job (upsert settings + schedule)
   async createJob(payload: CreateJobPayload) {
     const { userId, key, hourLocal, timezone, enabled = false } = payload;
@@ -66,10 +95,10 @@ export class NotificationController {
       enabled,
     });
 
-    // ⬇️ replace NotificationEngine.cancel(...)
+    // ⬇️  replace NotificationEngine.cancel(...)
     await cancelUserJob(userId, key);
 
-    // ⬇️ replace NotificationEngine.schedule(...)
+    // ⬇️  replace NotificationEngine.schedule(...)
     if (enabled) {
       await scheduleUserDailyJob(userId, key, hourLocal, timezone);
     }
