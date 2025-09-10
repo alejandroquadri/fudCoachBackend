@@ -1,5 +1,5 @@
 import { differenceInYears } from 'date-fns';
-import { RegistrationData, TargetObj } from '../types';
+// import { RegistrationData, TargetObj } from '../types';
 
 export class TargetsCalcService {
   caloriesPerKg = 7700;
@@ -71,77 +71,77 @@ export class TargetsCalcService {
     return Math.round(tdee - dailyDeficit);
   }
 
-  // Old methods
-
-  buildTargetObj = (data: RegistrationData): TargetObj => {
-    const tdeeObj = this.tdeeCalc(data);
-    console.log('este es el tdee', tdeeObj);
-    const dailyCaloricTarget = tdeeObj.tdee - this.dailyCaloricDeltaCalc(data);
-    const macroObj = this.macroNutrientsTargetCalc(dailyCaloricTarget);
-    return {
-      tdee: tdeeObj.tdee,
-      bmr: tdeeObj.bmr,
-      dailyCaloricTarget,
-      dailyCarbsTarget: macroObj.carbs,
-      dailyProteinTarget: macroObj.protein,
-      dailyFatTarget: macroObj.fat,
-    };
-  };
-
-  /* *
-  Total Daily Energy Expenditure  
-  */
-  tdeeCalc = (data: RegistrationData) => {
-    const sexFactor = data.sex === 'male' ? 5 : -161;
-    const age = differenceInYears(new Date(), new Date(data.birthdate));
-
-    // basal metabolic rate (BMR) is the amount of energy (in kilocalories)
-    // your body needs to perform its most basic life-sustaining functions
-    // while at complete rest – think breathing, blood circulation,
-    // cell production and temperature regulation.
-    const bmr = this.round(
-      10 * data.weight + 6.25 * data.height - 5 * age + sexFactor,
-      0
-    );
-    const tdee = this.round(bmr * data.lifestyle, 0);
-    return { bmr, tdee };
-  };
-
-  dailyCaloricDeltaCalc = (data: RegistrationData): number => {
-    const caloriesPerWeek = data.weightGoal * this.caloriesPerKg;
-    console.log(
-      'calories per week',
-      caloriesPerWeek,
-      data.weightGoal,
-      this.caloriesPerKg
-    );
-    const caloriesPerDay = this.round(caloriesPerWeek / 7, 0);
-    console.log('calories per day', caloriesPerDay);
-    return caloriesPerDay;
-  };
-
-  macroNutrientsTargetCalc = (caloricTarget: number) => {
-    const carbs = this.round(
-      (this.macroBalance.carbs * caloricTarget) / this.carbsPerCaloriesGram,
-      0
-    );
-    const protein = this.round(
-      (this.macroBalance.protein * caloricTarget) / this.proteinPerCaloriesGram,
-      0
-    );
-    const fat = this.round(
-      (this.macroBalance.fat * caloricTarget) / this.fatperCaloriesGram,
-      0
-    );
-    return { carbs, protein, fat };
-  };
-
-  round = (value: number, decimals: number): number => {
+  round(value: number, decimals: number): number {
     let d: string | number = '1';
     for (let i = 0; i < decimals; i++) {
       d += '0';
     }
     d = Number(d);
     return Math.round((value + Number.EPSILON) * d) / d;
-  };
+  }
 }
+
+// // Old methods
+//
+// buildTargetObj = (data: RegistrationData): TargetObj => {
+//   const tdeeObj = this.tdeeCalc(data);
+//   console.log('este es el tdee', tdeeObj);
+//   const dailyCaloricTarget = tdeeObj.tdee - this.dailyCaloricDeltaCalc(data);
+//   const macroObj = this.macroNutrientsTargetCalc(dailyCaloricTarget);
+//   return {
+//     tdee: tdeeObj.tdee,
+//     bmr: tdeeObj.bmr,
+//     dailyCaloricTarget,
+//     dailyCarbsTarget: macroObj.carbs,
+//     dailyProteinTarget: macroObj.protein,
+//     dailyFatTarget: macroObj.fat,
+//   };
+// };
+//
+// /* *
+// Total Daily Energy Expenditure
+// */
+// tdeeCalc = (data: RegistrationData) => {
+//   const sexFactor = data.sex === 'male' ? 5 : -161;
+//   const age = differenceInYears(new Date(), new Date(data.birthdate));
+//
+//   // basal metabolic rate (BMR) is the amount of energy (in kilocalories)
+//   // your body needs to perform its most basic life-sustaining functions
+//   // while at complete rest – think breathing, blood circulation,
+//   // cell production and temperature regulation.
+//   const bmr = this.round(
+//     10 * data.weight + 6.25 * data.height - 5 * age + sexFactor,
+//     0
+//   );
+//   const tdee = this.round(bmr * data.lifestyle, 0);
+//   return { bmr, tdee };
+// };
+//
+// dailyCaloricDeltaCalc = (data: RegistrationData): number => {
+//   const caloriesPerWeek = data.weightGoal * this.caloriesPerKg;
+//   console.log(
+//     'calories per week',
+//     caloriesPerWeek,
+//     data.weightGoal,
+//     this.caloriesPerKg
+//   );
+//   const caloriesPerDay = this.round(caloriesPerWeek / 7, 0);
+//   console.log('calories per day', caloriesPerDay);
+//   return caloriesPerDay;
+// };
+//
+// macroNutrientsTargetCalc = (caloricTarget: number) => {
+//   const carbs = this.round(
+//     (this.macroBalance.carbs * caloricTarget) / this.carbsPerCaloriesGram,
+//     0
+//   );
+//   const protein = this.round(
+//     (this.macroBalance.protein * caloricTarget) / this.proteinPerCaloriesGram,
+//     0
+//   );
+//   const fat = this.round(
+//     (this.macroBalance.fat * caloricTarget) / this.fatperCaloriesGram,
+//     0
+//   );
+//   return { carbs, protein, fat };
+// };

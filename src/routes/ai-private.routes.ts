@@ -4,7 +4,7 @@ import {
   UserController,
   WeightLogsController,
 } from '../controllers';
-import { AiFoodLog, AiProfile, AiUserPreferences, UserProfile } from '../types';
+import { AiFoodLog, AiProfile } from '../types';
 
 export class AiPrivateRoutes {
   private router: Router = express.Router();

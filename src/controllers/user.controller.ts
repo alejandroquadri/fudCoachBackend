@@ -1,7 +1,8 @@
-import bcrypt from 'bcryptjs';
 import { format } from 'date-fns';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
+
 import { UserModel } from '../models';
 import { TargetsCalcService } from '../services';
 import {

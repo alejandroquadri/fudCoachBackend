@@ -1,6 +1,7 @@
-import express, { Router, Request, Response, NextFunction } from 'express';
+import express, { NextFunction, Request, Response, Router } from 'express';
+
 import { UserController } from '../controllers';
-import { RegistrationData, UserProfile } from '../types';
+import { UserProfile } from '../types';
 
 export class UserRoutes {
   private router: Router = express.Router();
@@ -8,7 +9,6 @@ export class UserRoutes {
 
   constructor() {
     this.initializeRoutes();
-    // this.userController = new UserController();
   }
 
   private initializeRoutes(): void {

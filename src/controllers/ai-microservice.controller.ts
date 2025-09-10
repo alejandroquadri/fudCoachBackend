@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import FormData from 'form-data';
-import { AiProfile, AiUserPreferences } from '../types';
+import { AiProfile } from '../types';
 
 export class AiMicroserviceController {
   private axiosInstance: AxiosInstance;

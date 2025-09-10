@@ -22,6 +22,7 @@
     "date-fns-tz": "^3.2.0",
     "dotenv": "^16.0.3",
     "expo-server-sdk": "^3.15.0",
+    "jose": "^6.1.0",
     "jsonwebtoken": "^9.0.1",
     "langchain": "^0.0.198",
     "mongodb": "^6.1.0",

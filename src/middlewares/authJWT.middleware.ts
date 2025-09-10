@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
-import { User } from '../types';
+import { UserProfile } from '../types';
 
 // Custom middleware for JWT authentication
 export const authJWT = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate(
     'jwt',
     { session: false },
-    (err: Error | null, user: User | false, info: any) => {
+    (err: Error | null, user: UserProfile | false, info: any) => {
       if (err) {
         return next(err);
       }
