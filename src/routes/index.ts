@@ -11,6 +11,7 @@ import { AiMicroserviceRoutes } from './ai-microservice.routes';
 import { AiPrivateRoutes } from './ai-private.routes';
 import { ProfileRoutes } from './profile.routes';
 import { NotificationRoutes } from './notification.routes';
+import { IapRoutes } from './iap.routes';
 
 export const initializeRoutes = (app: Application) => {
   app.get('/', (_req: Request, res: Response) => {
@@ -27,5 +28,6 @@ export const initializeRoutes = (app: Application) => {
   app.use('/profile', authJWT, new ProfileRoutes().getRouter());
   app.use('/notifications', authJWT, new NotificationRoutes().getRouter());
   app.use('/ai-routes', new AiPrivateRoutes().getRouter());
+  app.use('/iap', new IapRoutes().getRouter());
   app.use('/users', new UserRoutes().getRouter());
 };

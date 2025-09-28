@@ -15,9 +15,10 @@ export class UserRoutes {
     // this.router.post('/signup', this.signUp);
     this.router.post('/login', this.login);
     this.router.post('/register', this.register);
-    this.router.post('/refreshToken', this.refreshToken);
-    this.router.post('/getUserById', this.getUserByID);
-    this.router.post('/calculatePlan', this.calculatePlan);
+    this.router.post('/refresh-token', this.refreshToken);
+    this.router.post('/get-user-by-id', this.getUserByID);
+    this.router.post('/login-apple', this.loginApple);
+    this.router.post('/calculate-plan', this.calculatePlan);
   }
 
   public getRouter(): Router {
@@ -27,7 +28,6 @@ export class UserRoutes {
   register = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { user } = req.body as { user: UserProfile };
-      console.log('me llega este user', user);
       const userData = await this.userController.register(user);
       res.status(200).send({
         auth: true,
@@ -60,6 +60,25 @@ export class UserRoutes {
       }
     } catch (error: unknown) {
       next(error);
+    }
+  };
+
+  loginApple = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { idToken, userData } = req.body as {
+        idToken: string;
+        userData?: Partial<UserProfile>;
+      };
+      if (!idToken) {
+        return res.status(400).json({ error: 'idToken is required' });
+      }
+
+      const { user, token, refreshToken } =
+        await this.userController.loginApple(idToken, userData);
+
+      res.status(200).json({ auth: true, user, token, refreshToken });
+    } catch (err) {
+      next(err);
     }
   };
 
@@ -99,7 +118,6 @@ export class UserRoutes {
 
   calculatePlan = (req: Request, res: Response, next: NextFunction) => {
     const { userData } = req.body;
-    console.log('me llega esta userd data:', userData);
     try {
       const plan = this.userController.calculatePlan(userData);
       res.status(200).json(plan);

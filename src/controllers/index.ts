@@ -7,3 +7,4 @@ export * from './exercise-logs.controller';
 export * from './weight-log.controller';
 export * from './ai-microservice.controller';
 export * from './notification.controller';
+export * from './iap.controller';

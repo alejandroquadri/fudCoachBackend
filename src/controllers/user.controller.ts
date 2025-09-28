@@ -1,10 +1,10 @@
 import { format } from 'date-fns';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
 
 import { UserModel } from '../models';
-import { TargetsCalcService } from '../services';
+import { JoseService, TargetsCalcService } from '../services';
 import {
   AiProfile,
   NutritionGoals,
@@ -17,6 +17,7 @@ export class UserController {
   userModel: UserModel = new UserModel();
   weightLogsCtrl: WeightLogsController = new WeightLogsController();
   targetsSc: TargetsCalcService = new TargetsCalcService();
+  ios_bundle_id = process.env.IOS_BUNDLE_ID!;
 
   async login(
     email: string,
@@ -24,17 +25,16 @@ export class UserController {
   ): Promise<
     string | { user: UserProfile; token: string; refreshToken: string }
   > {
-    console.log('arranca', email);
     const user = await this.userModel
       .getUserByEmail(email)
       .catch((err: unknown) => console.log('error en mongo', err));
-    console.log('obtengo usuario', user);
     if (!user) {
       return 'not_found';
     } else {
-      console.log(password, user.password);
+      if (!user.password) {
+        throw new Error('no password');
+      }
       const isMatch = await bcrypt.compare(password, user.password);
-      console.log(isMatch);
       if (!isMatch) {
         return 'invalid_credentials';
       } else {
@@ -44,19 +44,112 @@ export class UserController {
     }
   }
 
+  /**
+   * - Verifies Apple ID token via JoseService
+   * - If user exists by appleSub -> return tokens
+   * - Else if user exists by Apple's email -> link appleSub -> return tokens
+   * - Else if no user and userData provided -> create full profile using userData (hash password if present)
+   * - Else create minimal Apple-only user
+   */
+  async loginApple(
+    idToken: string,
+    userData?: Partial<UserProfile>
+  ): Promise<{ user: UserProfile; token: string; refreshToken: string }> {
+    const { payload } = await JoseService.verifyAppleIdToken(
+      idToken,
+      this.ios_bundle_id
+    );
+
+    const appleSub = String(payload.sub);
+    const emailFromApple =
+      typeof payload.email === 'string'
+        ? payload.email.toLowerCase()
+        : undefined;
+    const isRelay =
+      !!emailFromApple && emailFromApple.endsWith('@privaterelay.appleid.com');
+
+    // 1) Prefer lookup by appleSub
+    let user = await this.userModel.getUserByAppleSub(appleSub);
+
+    // 2) Otherwise try by **Apple-reported** email only (do not trust userData.email for linking)
+    if (!user && emailFromApple) {
+      user = await this.userModel.getUserByEmail(emailFromApple);
+      if (user) {
+        user.appleSub = appleSub;
+        user.providers = Array.from(
+          new Set([...(user.providers ?? []), 'apple'])
+        );
+        if (isRelay) user.appleEmailPrivateRelay = true;
+        await this.userModel.editUser(user);
+      }
+    }
+
+    // 3) Create new user
+    if (!user) {
+      // Decide the email we will store
+      const chosenEmail =
+        emailFromApple ??
+        (userData?.email ? userData.email.toLowerCase() : undefined) ??
+        `${appleSub}@privaterelay.appleid.com`;
+
+      // Start with Apple-required fields
+      const doc: Partial<UserProfile> = {
+        email: chosenEmail,
+        name: userData?.name ?? 'New User',
+        providers: ['apple'],
+        appleSub,
+        appleEmailPrivateRelay: !!emailFromApple && isRelay,
+      };
+
+      // If onboarding provided more profile info, merge it in
+      if (userData) {
+        // Never override appleSub/providers set above, but merge the rest
+        // Prefer the Apple email over user-provided if Apple gave one
+        const { password, email, providers, appleSub, ...rest } = userData;
+        Object.assign(doc, rest);
+
+        // // If onboarding also set a password, hash it so email+password login will work too
+        // if (password && password.length > 0) {
+        //   doc.password = await bcrypt.hash(password, 8);
+        //   // Include 'email' as a provider if we stored a password
+        //   doc.providers = Array.from(
+        //     new Set([...(doc.providers ?? []), 'email'])
+        //   ) as Array<'email' | 'apple'>;
+        // }
+      }
+
+      const inserted = await this.userModel.createUser(doc as UserProfile);
+      user = await this.getUserById(inserted.insertedId.toHexString());
+      if (!user) throw new Error('Error creating Apple user');
+    }
+
+    if (user._id) {
+      await this.weightLogsCtrl.createWeightLog({
+        user_id: user._id,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        weightLog: user.initWeight,
+      });
+    }
+
+    const { token, refreshToken } = this.createTokens(String(user._id));
+    return { user, token, refreshToken };
+  }
+
   async hashtest(password: string) {
     const hashedPassword = await bcrypt.hash(password, 8);
     const isMatch = await bcrypt.compare(password, hashedPassword);
     return isMatch;
   }
 
-  // TODO: aca tengo que hacer el nuevo register
   async register(
     userData: UserProfile
   ): Promise<{ user: UserProfile; token: string; refreshToken: string }> {
     const emailExists = await this.userModel.getUserByEmail(userData.email);
     if (emailExists) {
       throw new Error('email taken');
+    }
+    if (!userData.password) {
+      throw new Error('no password');
     }
     const hashedPassword = await bcrypt.hash(userData.password, 8);
 
@@ -84,15 +177,12 @@ export class UserController {
 
   async refreshAccessToken(oldRefreshToken: string) {
     try {
-      const decoded: any = jwt.verify(
+      const decoded = jwt.verify(
         oldRefreshToken,
         process.env.REFRESH_TOKEN_SECRET || 'refresh_secret'
-      );
+      ) as JwtPayload;
 
       const { token, refreshToken } = this.createTokens(decoded.id);
-
-      // Optionally store the new refresh token in the database
-      // await this.userModel.storeRefreshToken(decoded.id, newRefreshToken);
 
       return { token, refreshToken };
     } catch (error) {

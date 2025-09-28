@@ -35,6 +35,10 @@ export class UserModel {
     return this.mongoSc.findOne(query);
   }
 
+  getUserByAppleSub(appleSub: string): Promise<UserProfile | null> {
+    return this.mongoSc.findOne({ appleSub });
+  }
+
   async editUser(user: UserProfile | (AiProfile & { _id: string })) {
     if (!user._id) {
       throw new Error('User ID is required for editing');
@@ -44,41 +48,3 @@ export class UserModel {
     return this.mongoSc.update(_id, updateData);
   }
 }
-
-// /**
-//  * Create a new user in the database
-//  * @param email - User's email
-//  * @param password - User's password (hashed)
-//  * @param profile - Registration data
-//  * @param targetObj - Target object for user goals
-//  * @returns Insert result with acknowledged and insertedId
-//  */
-// async createUser(
-//   email: string,
-//   password: string,
-//   profile: RegistrationData,
-//   targetObj: TargetObj
-// ): Promise<{ acknowledged: boolean; insertedId: ObjectId }> {
-//   // Prepare the user data without _id
-//   const form: UserWithoutId = {
-//     email,
-//     password,
-//     name: profile.name,
-//     weightLogs: [
-//       {
-//         weightLog: Number(profile.weight),
-//         date: new Date(),
-//       },
-//     ],
-//     weightUnit: profile.weightUnit,
-//     height: profile.height,
-//     heightUnit: profile.heightUnit,
-//     birthday: profile.birthdate,
-//     sex: profile.sex,
-//     completedQA: true,
-//     ...targetObj,
-//   };
-//
-//   // Use MongoService to insert the user and return the result
-//   return this.mongoSc.create(form);
-// }

@@ -3,16 +3,12 @@ import FormData from 'form-data';
 import { AiProfile } from '../types';
 
 export class AiMicroserviceController {
-  private axiosInstance: AxiosInstance;
   private baseURL = 'http://localhost:8000';
-
-  constructor() {
-    this.axiosInstance = axios.create({
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
+  private axiosInstance: AxiosInstance = axios.create({
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 
   private setBaseUrl(url: string) {
     this.axiosInstance.defaults.baseURL = url;

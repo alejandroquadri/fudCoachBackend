@@ -79,6 +79,14 @@ export class NotificationRoutes {
   ) => {
     try {
       const { userId, key, hourLocal, timezone, enabled } = req.body;
+      console.log(
+        'createjob. Me llega:',
+        userId,
+        key,
+        hourLocal,
+        timezone,
+        enabled
+      );
       if (!userId || !key || !hourLocal || !timezone) {
         return res
           .status(400)

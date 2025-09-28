@@ -5,7 +5,12 @@ export interface UserProfile {
   name: string;
   avatar?: string;
   email: string;
-  password: string;
+  password?: string; // optional for Apple or Google accounts
+
+  providers?: Array<'email' | 'apple'>;
+  appleSub?: string; // Apple's stable "sub" claim
+  appleEmailPrivateRelay?: boolean; // optional flag
+
   gender: string;
   lifeStyle: number;
   activityLevel: string;

@@ -12,14 +12,15 @@ export class ChatRoutes {
 
   private initilizeRoutes = () => {
     this.router.get('/', this.test);
-    this.router.post('/getMessages', this.getMessages);
+    this.router.post('/get-messages', this.getMessages);
   };
 
   public getRouter = () => {
     return this.router;
   };
 
-  private test = (req: Request, res: Response) => res.send('chat routes Ok');
+  private test = (req: Request, res: Response) =>
+    res.send('chat routes really Ok');
 
   getMessages = async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.body;
