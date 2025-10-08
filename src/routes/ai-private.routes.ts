@@ -1,17 +1,19 @@
 import express, { NextFunction, Request, Response, Router } from 'express';
 import {
+  ExerciseLogsController,
   FoodLogsController,
   UserController,
   WeightLogsController,
 } from '../controllers';
-import { AiFoodLog, AiProfile } from '../types';
+import { AiFoodLogPayload, AiProfile, AiExerciseLogPayload } from '../types';
 
 export class AiPrivateRoutes {
   private router: Router = express.Router();
-  private foodLogsController: FoodLogsController = new FoodLogsController();
-  private weightLogsController: WeightLogsController =
-    new WeightLogsController();
-  private userController: UserController = new UserController();
+  private foodLogsCtrl: FoodLogsController = new FoodLogsController();
+  private weightLogsCtrl: WeightLogsController = new WeightLogsController();
+  private exerciseLogsCtrl: ExerciseLogsController =
+    new ExerciseLogsController();
+  private userCtrl: UserController = new UserController();
 
   constructor() {
     this.initilizeRoutes();
@@ -24,6 +26,7 @@ export class AiPrivateRoutes {
     this.router.get('/', this.test);
     this.router.post('/add-food-log', this.addFoodLog);
     this.router.post('/add-weight-log', this.addWeightLog);
+    this.router.post('/add-exercise-log', this.addExerciseLog);
     this.router.post('/update-preferences', this.updatePreferences);
   }
 
@@ -35,8 +38,10 @@ export class AiPrivateRoutes {
     res: Response,
     next: NextFunction
   ) => {
-    const { meal_obj, user_id }: { meal_obj: AiFoodLog[]; user_id: string } =
-      req.body;
+    const {
+      meal_obj,
+      user_id,
+    }: { meal_obj: AiFoodLogPayload[]; user_id: string } = req.body;
     try {
       if (!meal_obj) {
         throw new Error('no food item');
@@ -45,7 +50,7 @@ export class AiPrivateRoutes {
         throw new Error('no user id');
       }
 
-      const results = await this.foodLogsController.createAiFoodLog(
+      const results = await this.foodLogsCtrl.createAiFoodLog(
         meal_obj,
         user_id
       );
@@ -69,12 +74,33 @@ export class AiPrivateRoutes {
       if (!user_id) {
         throw new Error('no user id');
       }
-      const results = await this.weightLogsController.createAiWeightLog(
+      const results = await this.weightLogsCtrl.createAiWeightLog(
         weight,
         user_id
       );
       console.log(weight, results);
       res.status(200).json({ res: 'Weight Added' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private addExerciseLog = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const {
+        exercise_obj,
+        user_id,
+      }: { exercise_obj: AiExerciseLogPayload; user_id: string } = req.body;
+      console.log('me llega exercise obj', exercise_obj, user_id);
+      const ret = await this.exerciseLogsCtrl.createAiExerciseLog(
+        exercise_obj,
+        user_id
+      );
+      res.status(200).json({ result: 'Exercise Added', ret });
     } catch (error) {
       next(error);
     }
@@ -94,7 +120,7 @@ export class AiPrivateRoutes {
       // something
       const userPreferences = { _id: user_id, ...preferences };
 
-      const response = await this.userController.updateUser(userPreferences);
+      const response = await this.userCtrl.updateUser(userPreferences);
       console.log(response);
       res.status(200).json({ res: 'Profile updated' });
     } catch (error) {

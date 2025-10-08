@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { FoodLogsModel } from '../models';
-import { AiFoodLog, FoodLog } from '../types';
+import { AiFoodLogPayload, FoodLog } from '../types';
 import { format } from 'date-fns';
 
 export class FoodLogsController {
@@ -27,7 +27,7 @@ export class FoodLogsController {
   }
 
   async createAiFoodLog(
-    aiFoodLogs: AiFoodLog[],
+    aiFoodLogs: AiFoodLogPayload[],
     userId: string
   ): Promise<
     {

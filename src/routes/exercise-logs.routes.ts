@@ -24,7 +24,7 @@ export class ExerciseLogsRoutes {
   };
 
   private test = (_req: Request, res: Response) =>
-    res.send('exercise logs routes Ok');
+    res.send('exer logs routes Ok');
 
   private getExerciseLogsByDate = async (
     req: Request,

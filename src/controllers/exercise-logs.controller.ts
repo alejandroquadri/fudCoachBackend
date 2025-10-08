@@ -1,39 +1,64 @@
 import { ObjectId } from 'mongodb';
 import { ExerciseLogsModel } from '../models';
-import { ExerciseLog } from '../types';
+import { AiExerciseLogPayload, ExerciseLog } from '../types';
 
 export class ExerciseLogsController {
-  exerciseLogsModel: ExerciseLogsModel;
-  constructor() {
-    this.exerciseLogsModel = new ExerciseLogsModel();
-  }
+  exerciseLogsModel: ExerciseLogsModel = new ExerciseLogsModel();
 
-  getExerciseLogsByDate = async (
+  async getExerciseLogsByDate(
     userId: string,
     date: string
-  ): Promise<ExerciseLog[]> => {
+  ): Promise<ExerciseLog[]> {
     try {
       return this.exerciseLogsModel.getExerciseLogByDate(userId, date);
     } catch (error) {
       console.error('Error in ctrl getting exercise logs:', error);
       throw error;
     }
-  };
+  }
 
-  createExerciseLog = async (
-    exerciseLog: ExerciseLog
-  ): Promise<{
+  async createExerciseLog(exerciseLog: ExerciseLog): Promise<{
     acknowledged: boolean;
     insertedId: ObjectId;
-  }> => {
+  }> {
     try {
       return this.exerciseLogsModel.createExerciseLog(exerciseLog);
     } catch (error) {
       throw new Error('Error creating exercise log');
     }
-  };
+  }
 
-  editExerciseLog = async (exerciseLog: ExerciseLog) => {
+  async createAiExerciseLog(
+    aiExerciseLog: AiExerciseLogPayload,
+    userId: string
+  ) {
+    try {
+      const { exerciseName, duration, caloriesBurned } = aiExerciseLog;
+      const exerciseLog: ExerciseLog = {
+        user_id: userId,
+        exerciseName,
+        duration,
+        caloriesBurned,
+      };
+      return this.exerciseLogsModel.createExerciseLog(exerciseLog);
+    } catch (error) {
+      throw new Error('Error creating ai exercise log');
+    }
+  }
+
+  // export interface ExerciseLog {
+  //   _id?: ObjectId | string;
+  //   user_id: string | ObjectId;
+  //   createdAt?: Date; // timestamp when log was created
+  //   updatedAt?: Date; // timestamp when log was updated
+  //   date: string;
+  //   hour: string;
+  //   exerciseName: string;
+  //   duration: number;
+  //   caloriesBurned: number;
+  // }
+
+  async editExerciseLog(exerciseLog: ExerciseLog) {
     try {
       if (typeof exerciseLog._id === 'string') {
         exerciseLog._id = new ObjectId(exerciseLog._id);
@@ -42,14 +67,14 @@ export class ExerciseLogsController {
     } catch (error) {
       throw new Error('Error editing exercise log');
     }
-  };
+  }
 
-  deleteExerciseLog = async (id: string | ObjectId) => {
+  async deleteExerciseLog(id: string | ObjectId) {
     try {
       const objectId = typeof id === 'string' ? new ObjectId(id) : id;
       return this.exerciseLogsModel.deleteExerciseLog(objectId);
     } catch (error) {
       throw new Error('Error deleting exercise log');
     }
-  };
+  }
 }

@@ -1,6 +1,9 @@
 import { ObjectId, OptionalId } from 'mongodb';
 import { ExerciseLog } from '../types';
 import { MongoService } from '../services';
+import { format, addDays, parseISO } from 'date-fns';
+import { fromZonedTime } from 'date-fns-tz';
+const TZ = 'America/Argentina/Buenos_Aires';
 
 export class ExerciseLogsModel {
   collectionName = 'exerciseLogs';
@@ -10,7 +13,12 @@ export class ExerciseLogsModel {
     this.mongoSc = new MongoService<ExerciseLog>('exerciseLogs');
   }
 
-  createExerciseLog = async (exerciseLog: OptionalId<ExerciseLog>) => {
+  createExerciseLog = async (
+    exerciseLog: OptionalId<ExerciseLog>
+  ): Promise<{
+    acknowledged: boolean;
+    insertedId: ObjectId;
+  }> => {
     if (typeof exerciseLog._id === 'string') {
       exerciseLog._id = new ObjectId(exerciseLog._id);
     }
@@ -38,8 +46,35 @@ export class ExerciseLogsModel {
     return this.mongoSc.delete(objectId);
   };
 
-  getExerciseLogByDate = async (userId: string, date: string) => {
+  getExerciseLogByDateOld = async (userId: string, date: string) => {
     const query = { user_id: new ObjectId(userId), date };
     return this.mongoSc.find(query, { sort: { date: 1 } });
   };
+
+  async getExerciseLogByDate(
+    userId: string | ObjectId,
+    dateISO: string // "YYYY-MM-DD" in the user's local calendar
+  ): Promise<ExerciseLog[]> {
+    try {
+      const objectId =
+        typeof userId === 'string' ? new ObjectId(userId) : userId;
+
+      // Build the next day's ISO string safely (no local/UTC ambiguity)
+      const nextISO = format(addDays(parseISO(dateISO), 1), 'yyyy-MM-dd');
+
+      // Convert local midnights to UTC instants for MongoDB
+      const utcStart = fromZonedTime(`${dateISO}T00:00:00`, TZ);
+      const utcEnd = fromZonedTime(`${nextISO}T00:00:00`, TZ);
+
+      const query = {
+        user_id: objectId,
+        createdAt: { $gte: utcStart, $lt: utcEnd }, // half-open range
+      };
+
+      return this.mongoSc.find(query, { sort: { createdAt: 1 } });
+    } catch (error) {
+      console.error('Error getting exercise logs:', error);
+      throw error;
+    }
+  }
 }

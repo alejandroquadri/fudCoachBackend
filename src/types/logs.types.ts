@@ -31,14 +31,14 @@ export interface ExerciseLog {
   user_id: string | ObjectId;
   createdAt?: Date; // timestamp when log was created
   updatedAt?: Date; // timestamp when log was updated
-  date: string;
-  hour: string;
+  // date: string;
+  // hour: string;
   exerciseName: string;
   duration: number;
   caloriesBurned: number;
 }
 
-export interface AiFoodLog {
+export interface AiFoodLogPayload {
   name: string;
   quantity: number;
   serving_size: string;
@@ -46,4 +46,10 @@ export interface AiFoodLog {
   protein: number;
   carbs: number;
   fat: number;
+}
+
+export interface AiExerciseLogPayload {
+  exerciseName: string;
+  duration: number;
+  caloriesBurned: number;
 }
