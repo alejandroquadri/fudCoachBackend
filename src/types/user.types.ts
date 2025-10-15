@@ -2,6 +2,8 @@ import { ObjectId } from 'mongodb';
 
 export interface UserProfile {
   _id?: ObjectId | string;
+  createdAt: Date;
+  updatedAt: Date;
   name: string;
   avatar?: string;
   email: string;
