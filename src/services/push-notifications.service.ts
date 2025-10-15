@@ -3,7 +3,7 @@ import Expo, {
   ExpoPushReceipt,
   ExpoPushTicket,
 } from 'expo-server-sdk';
-import { PushPayload, SendResult } from '../../types';
+import { PushPayload, SendResult } from '../types';
 
 export class PushNotificationsService {
   private expo = new Expo();

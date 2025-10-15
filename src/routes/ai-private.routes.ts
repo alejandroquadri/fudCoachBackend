@@ -111,7 +111,6 @@ export class AiPrivateRoutes {
     res: Response,
     next: NextFunction
   ) => {
-    // payload = {"preferences": tool_input["preferences"], "user_id": user_id}
     const {
       preferences,
       user_id,
@@ -120,8 +119,7 @@ export class AiPrivateRoutes {
       // something
       const userPreferences = { _id: user_id, ...preferences };
 
-      const response = await this.userCtrl.updateUser(userPreferences);
-      console.log(response);
+      await this.userCtrl.updateUser(userPreferences);
       res.status(200).json({ res: 'Profile updated' });
     } catch (error) {
       next(error);

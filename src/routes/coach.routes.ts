@@ -1,6 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
-import { CoachController } from '../controllers';
-import { AiAgent, FatSecretService } from './../services';
+import { CoachController, UserController } from '../controllers';
+import { FatSecretService } from './../services';
 import multer from 'multer';
 import { UserProfile } from '../types';
 
@@ -10,9 +10,10 @@ interface MulterRequest extends Request {
 
 export class CoachRoutes {
   private router: Router = express.Router();
-  private coachController: CoachController = new CoachController();
-  private aiAgent: AiAgent = new AiAgent();
+  private coachCtrl: CoachController = new CoachController();
+  private userCtrl: UserController = new UserController();
   private fatSecretSc: FatSecretService = new FatSecretService();
+
   // Use memoryStorage so we get file.buffer directly
   private upload = multer({
     storage: multer.memoryStorage(),
@@ -31,6 +32,9 @@ export class CoachRoutes {
   private initializeRoutes = () => {
     this.router.get('/', this.testCoach);
     this.router.post('/init-user-preferences', this.initUserPreferences);
+    this.router.post('/get-welcome', this.getWelcomeMes);
+    this.router.post('/mark-welcome-delivered', this.markWelcomeDelivered);
+    this.router.post('/get-messages', this.getMessages);
     this.router.post('/get-answer', this.coachAnswer);
     this.router.post(
       '/parse-image',
@@ -38,7 +42,6 @@ export class CoachRoutes {
       this.parseImage
     );
     this.router.get('/getFood', this.getFood);
-    this.router.get('/lcel-agent', this.lcelAnswer);
   };
 
   public getRouter = () => {
@@ -47,6 +50,36 @@ export class CoachRoutes {
 
   private testCoach = (req: Request, res: Response) =>
     res.send('Coach routes Ok');
+
+  private getWelcomeMes = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId } = req.body;
+    try {
+      const welcomeMes = await this.coachCtrl.getWelcomeMes(userId);
+      res.status(200).json(welcomeMes);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private markWelcomeDelivered = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId } = req.body;
+    try {
+      const userPreferences = { _id: userId, deliveredWelcome: true };
+
+      await this.userCtrl.updateUser(userPreferences);
+      res.status(200).json({ res: 'updated' });
+    } catch (error) {
+      next(error);
+    }
+  };
 
   private initUserPreferences = async (
     req: Request,
@@ -59,11 +92,26 @@ export class CoachRoutes {
         throw new Error('no userProfile');
       }
       const { _id, email, password, ...aiProfile } = userProfile;
-      const state = await this.coachController.initUserPreferences(
+      const state = await this.coachCtrl.initUserPreferences(
         userProfile._id as string,
         aiProfile
       );
       res.status(200).json(state);
+    } catch (error: unknown) {
+      next(error);
+    }
+  };
+
+  getMessages = async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req.body;
+    console.log('llega a getMsgs', userId);
+    try {
+      if (!userId) {
+        throw new Error('no user id');
+      }
+      console.log('pido mensajes');
+      const messages = await this.coachCtrl.getMessages(userId);
+      res.status(200).json(messages);
     } catch (error: unknown) {
       next(error);
     }
@@ -83,7 +131,7 @@ export class CoachRoutes {
       if (typeof message !== 'string') {
         throw new Error('message is not a string');
       }
-      const answer = await this.coachController.coachResponse(message, userId);
+      const answer = await this.coachCtrl.coachResponse(message, userId);
       res.status(200).json(answer);
     } catch (error: unknown) {
       next(error);
@@ -111,7 +159,7 @@ export class CoachRoutes {
       console.log('Image size:', file.size);
 
       // 👇 Use the imageBase64 or imageUrl with your AI tool
-      const answer = await this.coachController.parseImage(file, userId);
+      const answer = await this.coachCtrl.parseImage(file, userId);
       res.status(200).json(answer);
     } catch (error: unknown) {
       next(error);
@@ -126,20 +174,6 @@ export class CoachRoutes {
       const results = await this.fatSecretSc.searchFoods(query);
       res.json(results);
     } catch (error: unknown) {
-      next(error);
-    }
-  };
-
-  private lcelAnswer = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      // const answer = await this.aiAgent.buildInitAgentEx();
-      const answer = await this.aiAgent.buildChatAgentLCEL();
-      res.status(200).json(answer);
-    } catch (error) {
       next(error);
     }
   };

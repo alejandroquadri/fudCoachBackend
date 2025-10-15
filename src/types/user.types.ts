@@ -31,6 +31,8 @@ export interface UserProfile {
   dislikes?: Array<string>;
   likes?: Array<string>;
   meal_times?: Array<string>;
+
+  deliveredWelcome?: boolean; // optional flag to track if welcome message was sent
 }
 
 export interface NutritionGoals {

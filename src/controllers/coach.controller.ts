@@ -4,13 +4,11 @@ import { AiProfile, ChatMsg } from '../types';
 import { ObjectId } from 'mongodb';
 import { ChatModel, UserModel } from '../models';
 import { AiMicroserviceController } from './ai-microservice.controller';
-import { CloudinaryService } from '../services';
 import sharp from 'sharp';
 
 export class CoachController {
   chatModel: ChatModel = new ChatModel();
   userModel: UserModel = new UserModel();
-  cloudinaryService: CloudinaryService = new CloudinaryService();
   microserviceCtrl: AiMicroserviceController = new AiMicroserviceController();
 
   async initUserPreferences(userId: string, preferences: AiProfile) {
@@ -20,6 +18,30 @@ export class CoachController {
       throw new Error(`Error inicializando preferencias: ${error}`);
     }
   }
+
+  async getWelcomeMes(userId: string) {
+    const mes = `Hi! I'm your personal dietitian 🤖🥗
+
+I'm here for you 24/7, all year round — to help you stay accountable and reach your nutrition goals.
+
+You can share your meals with me through text or photos. I’ll automatically estimate their calories and macronutrients, and log them for you. You can also record your weight, and I’ll create a clean, easy-to-read chart so you can track your progress.
+
+Have any nutrition questions? Just ask. I can also help you design personalized meal plans based on your preferences — and I’ll remember what you like (and what you don’t).
+
+Most importantly, I’m here to support you every step of the way on this journey.
+
+Let’s get started — are you ready? 💪`;
+
+    const aiWelcomeMsg = this.buildUserMsg(mes, userId, 'ai');
+
+    // guardo mensaje de bienvenida como primer mensage
+    await this.chatModel.saveMessage(aiWelcomeMsg);
+    return aiWelcomeMsg;
+  }
+
+  getMessages = (userId: string) => {
+    return this.chatModel.getMessages(userId);
+  };
 
   async coachResponse(message: string, userId: string): Promise<ChatMsg> {
     try {
@@ -66,35 +88,6 @@ export class CoachController {
       throw new Error('Error parsing Image');
     }
   }
-
-  // async parseImage(
-  //   file: Express.Multer.File,
-  //   userId: string
-  // ): Promise<ChatMsg> {
-  //   try {
-  //     // Upload to Cloudinary
-  //     const filename = `${userId}-${Date.now()}`;
-  //     const cloudinaryUrl = await this.cloudinaryService.uploadImageFromBuffer(
-  //       file.buffer,
-  //       filename
-  //     );
-  //     console.log('obtengo el url', cloudinaryUrl);
-  //
-  //     // Build LLM prompt or direct call
-  //     const mes = `I ate this ${cloudinaryUrl}`;
-  //     const aiAnswer = await this.microserviceCtrl.getAiResponse(mes, userId);
-  //     console.log('respuesta de parsing img', aiAnswer.response);
-  //     const aiChatMsg = this.buildUserMsg(aiAnswer.response, userId, 'ai');
-  //
-  //     // delete image once llm parsed it
-  //     await this.cloudinaryService.deleteImage(filename);
-  //
-  //     return aiChatMsg;
-  //   } catch (error) {
-  //     console.log('Error parsing Image', error);
-  //     throw new Error('Error parsing Image');
-  //   }
-  // }
 
   private buildUserMsg(
     content: string,

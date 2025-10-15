@@ -39,7 +39,7 @@ export class UserModel {
     return this.mongoSc.findOne({ appleSub });
   }
 
-  async editUser(user: UserProfile | (AiProfile & { _id: string })) {
+  async editUser(user: Partial<UserProfile> | (AiProfile & { _id: string })) {
     if (!user._id) {
       throw new Error('User ID is required for editing');
     }

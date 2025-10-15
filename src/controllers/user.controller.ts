@@ -207,7 +207,7 @@ export class UserController {
     return { token, refreshToken };
   }
 
-  async updateUser(user: UserProfile | (AiProfile & { _id: string })) {
+  async updateUser(user: Partial<UserProfile> | (AiProfile & { _id: string })) {
     try {
       if (!user) {
         throw new Error('User is required for updating');
