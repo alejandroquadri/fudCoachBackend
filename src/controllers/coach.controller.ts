@@ -32,6 +32,7 @@ Most importantly, I’m here to support you every step of the way on this journe
 
 Let’s get started — are you ready? 💪`;
 
+    const resp = await this.microserviceCtrl.appendAiMessage(userId, mes);
     const aiWelcomeMsg = this.buildUserMsg(mes, userId, 'ai');
 
     // guardo mensaje de bienvenida como primer mensage

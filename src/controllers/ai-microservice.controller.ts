@@ -63,4 +63,22 @@ export class AiMicroserviceController {
     });
     return response.data;
   }
+
+  async appendAiMessage(userId: string, message: string) {
+    this.setBaseUrl(this.baseURL);
+    const response = await this.axiosInstance.post('/append-ai-message', {
+      user_id: userId,
+      content: message,
+    });
+    return response.data;
+  }
+
+  async appendHumanMessage(userId: string, message: string) {
+    this.setBaseUrl(this.baseURL);
+    const response = await this.axiosInstance.post('/append-human-message', {
+      user_id: userId,
+      content: message,
+    });
+    return response.data;
+  }
 }
