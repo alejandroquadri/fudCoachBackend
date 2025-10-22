@@ -11,7 +11,7 @@
     "docker:run": "docker run -d --name fud-node --env-file .env -p 3000:3000 fud-node:dev",
     "docker:stop": "docker stop fud-node",
     "docker:remove": "docker rm -f fur-node",
-    "docker:clean": "docker system prune -af",
+    "docker:clean": "docker system prune -af --volumes",
     "docker:logs": "docker logs -f fud-node",
     "docker:isrunning": "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
   },
