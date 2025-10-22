@@ -4,11 +4,9 @@
   "description": "Fud Coach backend api",
   "main": "./dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon",
-    "build": "webpack --config webpack.config.js",
-    "run:build": "nodemon --config nodemon.json",
-    "deploy": "git push heroku"
+    "build": "tsc --project tsconfig.json",
+    "run:build": "NODE_ENV=prod node dist/index.js"
   },
   "author": "Alejandro Quadri",
   "license": "ISC",
