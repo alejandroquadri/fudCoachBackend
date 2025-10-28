@@ -3,22 +3,27 @@ import FormData from 'form-data';
 import { AiProfile } from '../types';
 
 export class AiMicroserviceController {
-  private baseURL = 'http://localhost:8000';
+  private baseURL =
+    process.env.NODE_ENV === 'production'
+      ? 'http://fud-python:8000'
+      : 'http://localhost:8000';
   private axiosInstance: AxiosInstance = axios.create({
+    baseURL: this.baseURL,
     headers: {
       'Content-Type': 'application/json',
     },
+    timeout: 10_000,
   });
 
-  private setBaseUrl(url: string) {
-    this.axiosInstance.defaults.baseURL = url;
-  }
+  // private setBaseUrl(url: string) {
+  //   this.axiosInstance.defaults.baseURL = url;
+  // }
 
   async getAiResponse(
     prompt: string,
     user_id: string
   ): Promise<{ response: string }> {
-    this.setBaseUrl(this.baseURL);
+    // this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/process-prompt', {
       prompt,
       user_id,
@@ -37,7 +42,7 @@ export class AiMicroserviceController {
       filename: `mobile_${Date.now()}.jpg`,
       contentType: 'image/jpeg',
     });
-    this.setBaseUrl(this.baseURL);
+    // this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/parse-image', fd, {
       headers: fd.getHeaders(),
       maxContentLength: Infinity,
@@ -48,7 +53,7 @@ export class AiMicroserviceController {
   }
 
   async getMessages(userId: string) {
-    this.setBaseUrl(this.baseURL);
+    // this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/get-conversation', {
       user_id: userId,
     });
@@ -56,7 +61,7 @@ export class AiMicroserviceController {
   }
 
   async initStatePreferences(userId: string, preferences: AiProfile) {
-    this.setBaseUrl(this.baseURL);
+    // this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/init-user-preferences', {
       user_id: userId,
       preferences,
@@ -65,7 +70,7 @@ export class AiMicroserviceController {
   }
 
   async appendAiMessage(userId: string, message: string) {
-    this.setBaseUrl(this.baseURL);
+    // this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/append-ai-message', {
       user_id: userId,
       content: message,
@@ -74,7 +79,7 @@ export class AiMicroserviceController {
   }
 
   async appendHumanMessage(userId: string, message: string) {
-    this.setBaseUrl(this.baseURL);
+    // this.setBaseUrl(this.baseURL);
     const response = await this.axiosInstance.post('/append-human-message', {
       user_id: userId,
       content: message,

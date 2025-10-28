@@ -1,5 +1,3 @@
-// import fs from 'fs';
-// import path from 'path';
 import { AiProfile, ChatMsg } from '../types';
 import { ObjectId } from 'mongodb';
 import { ChatModel, UserModel } from '../models';

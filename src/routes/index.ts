@@ -10,6 +10,7 @@ import { AiPrivateRoutes } from './ai-private.routes';
 import { ProfileRoutes } from './profile.routes';
 import { NotificationRoutes } from './notification.routes';
 import { IapRoutes } from './iap.routes';
+import { TestRoutes } from './test.routes';
 // import { AiMicroserviceRoutes } from './ai-microservice.routes';
 
 export const initializeRoutes = (app: Application) => {
@@ -28,4 +29,5 @@ export const initializeRoutes = (app: Application) => {
   app.use('/ai-routes', new AiPrivateRoutes().getRouter()); // rutas para que el ai interactue co la db
   app.use('/iap', new IapRoutes().getRouter());
   app.use('/users', new UserRoutes().getRouter());
+  app.use('/test', new TestRoutes().getRouter());
 };
