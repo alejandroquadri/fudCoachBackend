@@ -1,33 +1,19 @@
-import { ObjectId } from 'mongodb';
+import { JWSTransactionDecodedPayload } from '@apple/app-store-server-library';
 
 export type Entitlement = {
+  tx?: JWSTransactionDecodedPayload;
   active: boolean;
-  sku: string;
+  productId: string;
+  originalTransactionId: string;
   expiresAtISO?: string;
-  environment: 'StoreKit' | 'Sandbox' | 'Production';
+  platform: 'ios';
+  appAccountToken?: string;
+  environment?: 'Production' | 'Sandbox'; // NEW
 };
 
 export type ValidateIOSPayload = {
-  productId: string;
   transactionId: string;
-  receiptData: string; // NEW: base64 app receipt
-};
-
-export type ValidateResponse = {
-  ok: boolean;
-  entitlement?: Entitlement;
-  error?: string;
-};
-
-export type EntitlementDoc = {
-  _id?: ObjectId;
-  user_id: ObjectId; // who owns the entitlement
-  platform: 'ios';
-  sku: string; // productId
-  environment: 'Sandbox' | 'Production';
   originalTransactionId?: string;
-  expiresAt?: Date;
-  isActive: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  productId?: string;
+  appAccountToken?: string;
 };

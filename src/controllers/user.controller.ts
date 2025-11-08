@@ -17,7 +17,7 @@ export class UserController {
   userModel: UserModel = new UserModel();
   weightLogsCtrl: WeightLogsController = new WeightLogsController();
   targetsSc: TargetsCalcService = new TargetsCalcService();
-  ios_bundle_id = process.env.IOS_BUNDLE_ID!;
+  ios_bundle_id = process.env.APP_BUNDLE_ID!;
 
   async login(
     email: string,

@@ -13,29 +13,43 @@ export class IapRoutes {
   private initializeRoutes(): void {
     this.router.get('/', this.test);
     this.router.post('/validate-ios', this.validateIos);
+    this.router.post('/validate-subs-status', this.validateStatus);
   }
 
   public getRouter(): Router {
     return this.router;
   }
 
-  test = async (res: Response) => {
+  test = async (_req: Request, res: Response) => {
     res.status(200).json({ mes: 'succes iap' });
   };
 
   validateIos = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { payload, userId } = req.body as {
+      const { payload } = req.body as {
         payload: ValidateIOSPayload;
-        userId: string;
       };
-      const out = await this.iapCtrl.validateIos(payload, userId);
+      console.log('llega validateIOs', payload);
+      const out = await this.iapCtrl.validateIos(payload);
 
       if (!out.ok) return res.status(400).json(out);
       return res.status(200).json(out);
     } catch (error) {
       console.log(error);
       next('Error validating ios');
+    }
+  };
+
+  validateStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { originalTransactionId } = req.body;
+      const out = await this.iapCtrl.checkSubscriptionStatus(
+        originalTransactionId
+      );
+      res.status(200).json({ ret: out });
+    } catch (error) {
+      console.log(error);
+      next('Error validating status of subscription');
     }
   };
 }

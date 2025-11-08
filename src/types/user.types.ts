@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import { Entitlement } from './iap.types';
 
 export interface UserProfile {
   _id?: ObjectId | string;
@@ -12,6 +13,7 @@ export interface UserProfile {
   providers?: Array<'email' | 'apple'>;
   appleSub?: string; // Apple's stable "sub" claim
   appleEmailPrivateRelay?: boolean; // optional flag
+  entitlement: Entitlement;
 
   gender: string;
   lifeStyle: number;

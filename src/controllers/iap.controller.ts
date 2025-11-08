@@ -1,59 +1,51 @@
-// controllers/iap.controller.ts
-import { ObjectId } from 'mongodb';
-import { Entitlement, ValidateIOSPayload, ValidateResponse } from '../types';
-import { EntitlementsModel } from '../models/entitlements.model';
-import { IapAppleService } from '../services';
+import { AppStoreService } from '../services/app-store.service';
+import { Entitlement, ValidateIOSPayload } from '../types';
 
 export class IapController {
-  private entitlements = new EntitlementsModel();
-  iapAppleSc: IapAppleService = new IapAppleService();
+  private appleStoreSc = new AppStoreService();
 
-  validateIos = async (
-    payload: ValidateIOSPayload,
-    userId: string
-  ): Promise<ValidateResponse> => {
+  async validateIos(
+    payload: ValidateIOSPayload
+  ): Promise<
+    { ok: true; entitlement: Entitlement } | { ok: false; error: string }
+  > {
     try {
-      if (!payload?.productId || !payload?.receiptData) {
-        return { ok: false, error: 'missing_fields' };
-      }
+      const { transactionId, appAccountToken } = payload;
+      if (!transactionId) return { ok: false, error: 'Missing transactionId' };
 
-      const apple = await this.iapAppleSc.verifyReceipt(payload.receiptData);
-      if (apple.status !== 0)
-        return { ok: false, error: `apple_status_${apple.status}` };
-      if (!this.iapAppleSc.isBundleValid(apple))
-        return { ok: false, error: 'bundle_mismatch' };
+      console.log('esto envio al get verified: ', transactionId);
+      const { transaction, environment } =
+        await this.appleStoreSc.getVerifiedTransactionById(transactionId);
 
-      const latest = this.iapAppleSc.pickLatestLineForSku(
-        apple,
-        payload.productId
-      );
-      if (!latest) return { ok: false, error: 'product_not_found_in_receipt' };
+      // Optional: assert bundleId or appAccountToken matches your expectation here.
 
-      const active = this.iapAppleSc.isActive(latest.expiresAt);
-      const environment =
-        apple.environment === 'Sandbox' ? 'Sandbox' : 'Production';
+      const expiresMs = transaction.expiresDate
+        ? Number(transaction.expiresDate)
+        : undefined;
 
-      await this.entitlements.saveEntitlement({
-        user_id: new ObjectId(userId),
-        platform: 'ios',
-        sku: payload.productId,
-        environment,
-        originalTransactionId: latest.originalTransactionId,
-        expiresAt: latest.expiresAt,
-        isActive: active,
-      });
+      const active =
+        typeof expiresMs === 'number' ? Date.now() < expiresMs : true;
 
       const entitlement: Entitlement = {
+        // tx: transaction,
         active,
-        sku: payload.productId,
-        expiresAtISO: latest.expiresAt?.toISOString(),
-        environment,
+        productId: transaction.productId,
+        originalTransactionId: transaction.originalTransactionId,
+        expiresAtISO: expiresMs
+          ? new Date(Number(transaction.expiresDate)).toISOString()
+          : undefined,
+        platform: 'ios',
+        appAccountToken,
+        environment: environment === 'PRODUCTION' ? 'Production' : 'Sandbox',
       };
 
       return { ok: true, entitlement };
-    } catch (err) {
-      console.error('validateIos controller error:', err);
-      return { ok: false, error: 'server_error' };
+    } catch (e) {
+      return { ok: false, error: 'Apple validation failed' };
     }
-  };
+  }
+
+  checkSubscriptionStatus(originalTx: string) {
+    return this.appleStoreSc.checkSubscriptionStatus(originalTx);
+  }
 }

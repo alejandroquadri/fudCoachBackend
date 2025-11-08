@@ -1,3 +1,4 @@
+
 # ---- Build stage: compile TypeScript to dist/ ----
 FROM node:20-alpine AS build
 WORKDIR /app
@@ -23,7 +24,12 @@ RUN yarn install --production
 # Bring compiled code
 COPY --from=build /app/dist ./dist
 
+# ✅  bring the certs into the runtime image
+COPY certs ./certs  
+COPY secrets/appstore_private_key.p8 ./secrets/appstore_private_key.p8
+
 ENV PORT=3000
 EXPOSE 3000
 CMD ["node","dist/index.js"]
+
 
