@@ -43,10 +43,11 @@ export class IapRoutes {
   validateStatus = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { originalTransactionId } = req.body;
+      console.log('llega tx original', originalTransactionId);
       const out = await this.iapCtrl.checkSubscriptionStatus(
         originalTransactionId
       );
-      res.status(200).json({ ret: out });
+      res.status(200).json(out);
     } catch (error) {
       console.log(error);
       next('Error validating status of subscription');

@@ -35,7 +35,6 @@ export class IapController {
           ? new Date(Number(transaction.expiresDate)).toISOString()
           : undefined,
         platform: 'ios',
-        appAccountToken,
         environment: environment === 'PRODUCTION' ? 'Production' : 'Sandbox',
       };
 

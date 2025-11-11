@@ -7,7 +7,6 @@ export type Entitlement = {
   originalTransactionId: string;
   expiresAtISO?: string;
   platform: 'ios';
-  appAccountToken?: string;
   environment?: 'Production' | 'Sandbox'; // NEW
 };
 

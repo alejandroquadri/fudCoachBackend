@@ -53,6 +53,7 @@ export class UserController {
    */
   async loginApple(
     idToken: string,
+    register: boolean,
     userData?: Partial<UserProfile>
   ): Promise<{ user: UserProfile; token: string; refreshToken: string }> {
     const { payload } = await JoseService.verifyAppleIdToken(
@@ -123,7 +124,7 @@ export class UserController {
       if (!user) throw new Error('Error creating Apple user');
     }
 
-    if (user._id) {
+    if (user._id && register === true) {
       await this.weightLogsCtrl.createWeightLog({
         user_id: user._id,
         date: format(new Date(), 'yyyy-MM-dd'),

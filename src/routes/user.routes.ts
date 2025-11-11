@@ -65,8 +65,9 @@ export class UserRoutes {
 
   loginApple = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { idToken, userData } = req.body as {
+      const { idToken, register, userData } = req.body as {
         idToken: string;
+        register: boolean;
         userData?: Partial<UserProfile>;
       };
       if (!idToken) {
@@ -74,7 +75,7 @@ export class UserRoutes {
       }
 
       const { user, token, refreshToken } =
-        await this.userController.loginApple(idToken, userData);
+        await this.userController.loginApple(idToken, register, userData);
 
       res.status(200).json({ auth: true, user, token, refreshToken });
     } catch (err) {
