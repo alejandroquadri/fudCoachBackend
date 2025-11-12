@@ -8,6 +8,10 @@ export type Entitlement = {
   expiresAtISO?: string;
   platform: 'ios';
   environment?: 'Production' | 'Sandbox'; // NEW
+  grant?: {
+    type: 'staff' | 'promo' | 'test'; // reason for the bypass
+    untilISO?: string; // optional expiry for the bypass
+  };
 };
 
 export type ValidateIOSPayload = {

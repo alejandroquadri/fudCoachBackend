@@ -81,6 +81,8 @@ Let’s get started — are you ready? 💪`;
       console.log('respuesta de parsing img', aiAnswer.response);
       const aiChatMsg = this.buildUserMsg(aiAnswer.response, userId, 'ai');
 
+      // salvo devolucion de ai
+      await this.chatModel.saveMessage(aiChatMsg);
       return aiChatMsg;
     } catch (error) {
       console.log('Error parsing Image', error);

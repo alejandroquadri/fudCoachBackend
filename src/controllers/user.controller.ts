@@ -213,6 +213,7 @@ export class UserController {
       if (!user) {
         throw new Error('User is required for updating');
       }
+      console.log('user en controller', user);
       return this.userModel.editUser(user);
     } catch (error) {
       throw new Error('Error updating user');
