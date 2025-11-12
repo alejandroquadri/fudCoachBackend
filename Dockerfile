@@ -10,6 +10,7 @@ RUN yarn install
 # Copy source and compile
 COPY tsconfig.json ./
 COPY src ./src
+COPY public ./public           
 RUN yarn build   # runs: tsc --project tsconfig.json
 
 # ---- Runtime stage: run compiled JS ----
@@ -23,6 +24,7 @@ RUN yarn install --production
 
 # Bring compiled code
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/public ./public
 
 # ✅  bring the certs into the runtime image
 COPY certs ./certs  
