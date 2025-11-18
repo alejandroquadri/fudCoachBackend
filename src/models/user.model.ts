@@ -47,4 +47,9 @@ export class UserModel {
     const { _id, ...updateData } = user;
     return this.mongoSc.update(_id, updateData);
   }
+
+  async deleteUser(id: string) {
+    if (!id) throw new Error('Id required to delete User');
+    return this.mongoSc.delete(id);
+  }
 }

@@ -17,6 +17,7 @@ export class ProfileRoutes {
     this.router.get('/', this.test);
     this.router.post('/get', this.getUser);
     this.router.post('/update', this.updateProfile);
+    this.router.post('/delete', this.deleteUser);
   };
 
   private test = (req: Request, res: Response) => res.send('Profile routes Ok');
@@ -46,6 +47,21 @@ export class ProfileRoutes {
       }
       const ret = await this.userController.updateUser(user);
       res.status(200).json(ret);
+    } catch (error: unknown) {
+      next(error);
+    }
+  };
+
+  private deleteUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { id } = req.body;
+    try {
+      if (!id) throw new Error('no id');
+      await this.userController.deleteUser(id);
+      res.status(200).json({ success: true });
     } catch (error: unknown) {
       next(error);
     }

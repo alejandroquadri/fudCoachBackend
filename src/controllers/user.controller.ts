@@ -243,4 +243,10 @@ export class UserController {
       dailyProteinTarget: macroTargets.protein,
     };
   }
+
+  deleteUser(id: string) {
+    //TODO: pendiente elminar todos los datos relacionados con ese id
+    console.log('recibo este id en el controller', id);
+    return this.userModel.deleteUser(id);
+  }
 }
