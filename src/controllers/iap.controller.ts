@@ -10,7 +10,7 @@ export class IapController {
     { ok: true; entitlement: Entitlement } | { ok: false; error: string }
   > {
     try {
-      const { transactionId, appAccountToken } = payload;
+      const { transactionId } = payload;
       if (!transactionId) return { ok: false, error: 'Missing transactionId' };
 
       console.log('esto envio al get verified: ', transactionId);
