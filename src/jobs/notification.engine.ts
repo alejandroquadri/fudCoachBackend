@@ -1,44 +1,58 @@
 import type { Job } from 'agenda';
 import { getAgenda } from './agenda';
 import { NotificationController } from '../controllers';
+import {
+  DAILY_PLANNER_MESSAGES,
+  LUNCH_LOG_MESSAGES,
+  DINNER_LOG_MESSAGES,
+} from './notification-messages';
 
 export type NotificationKey =
   | 'dailyPlanner'
   | 'lunchLogReminder'
   | 'dinnerLogReminder';
+
 export const JOB_NAME = 'notification.send';
+
+const pickRandom = <T>(items: T[]): T =>
+  items[Math.floor(Math.random() * items.length)];
 
 export const registerNotificationJobs = async () => {
   const ag = await getAgenda();
+
   ag.define(JOB_NAME, async (job: Job) => {
     const { userId, key } = job.attrs.data as {
       userId: string;
       key: NotificationKey;
     };
+
     const nc = new NotificationController();
 
     switch (key) {
-      case 'dailyPlanner':
+      case 'dailyPlanner': {
+        const msg = pickRandom(DAILY_PLANNER_MESSAGES);
         await nc.sendNotificationToUser(userId, {
-          title: 'Plan your day ✍️',
-          body: 'Pequeño plan, grandes resultados. ¿Qué vas a comer hoy? ¿Algún desafío a la vista?',
+          ...msg,
           data: { type: 'dailyPlanner' },
         });
         break;
-      case 'lunchLogReminder':
+      }
+      case 'lunchLogReminder': {
+        const msg = pickRandom(LUNCH_LOG_MESSAGES);
         await nc.sendNotificationToUser(userId, {
-          title: 'Lunch time 🍽️',
-          body: 'Anotá tu almuerzo ahora. Dos toques y listo.',
+          ...msg,
           data: { type: 'lunchLogReminder' },
         });
         break;
-      case 'dinnerLogReminder':
+      }
+      case 'dinnerLogReminder': {
+        const msg = pickRandom(DINNER_LOG_MESSAGES);
         await nc.sendNotificationToUser(userId, {
-          title: 'Dinner check-in 🌙',
-          body: 'Antes de cerrar el día, registrá tu cena y cómo te fue.',
+          ...msg,
           data: { type: 'dinnerLogReminder' },
         });
         break;
+      }
       default:
         break;
     }

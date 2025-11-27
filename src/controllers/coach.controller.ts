@@ -18,19 +18,16 @@ export class CoachController {
   }
 
   async getWelcomeMes(userId: string) {
-    const mes = `Hi! I'm your personal dietitian 🤖🥗
+    const mes = `Hi! I'm your AI nutrition assistant 🤖🥗  
+I’m here 24/7 to help you stay accountable and reach your nutrition goals. You can share your meals with me through text or photos — I’ll estimate their calories and macronutrients and log them for you. You can also record your weight, and I’ll create a clean, easy-to-read chart so you can track your progress.
 
-I'm here for you 24/7, all year round — to help you stay accountable and reach your nutrition goals.
+I can answer nutrition questions and help you build meal ideas based on your preferences — and I’ll remember what you like (and what you don’t).
 
-You can share your meals with me through text or photos. I’ll automatically estimate their calories and macronutrients, and log them for you. You can also record your weight, and I’ll create a clean, easy-to-read chart so you can track your progress.
+Just a quick note: I’m not a medical professional, and everything I provide is general wellness guidance. For medical conditions or therapeutic diets, please consult a licensed healthcare provider.
 
-Have any nutrition questions? Just ask. I can also help you design personalized meal plans based on your preferences — and I’ll remember what you like (and what you don’t).
+Ready to get started? 💪`;
 
-Most importantly, I’m here to support you every step of the way on this journey.
-
-Let’s get started — are you ready? 💪`;
-
-    const resp = await this.microserviceCtrl.appendAiMessage(userId, mes);
+    await this.microserviceCtrl.appendAiMessage(userId, mes);
     const aiWelcomeMsg = this.buildUserMsg(mes, userId, 'ai');
 
     // guardo mensaje de bienvenida como primer mensage
