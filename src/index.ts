@@ -2,10 +2,12 @@ import express, { Application } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import { mongoInstance } from './connection';
-import { initializeMiddlewares } from './middlewares';
+import { errorHandler } from './middlewares';
 import { initializePassportStrategy } from './strategies/jwtStrategy';
 import { initializeRoutes } from './routes';
 import { stopAgenda, registerNotificationJobs } from './jobs';
+import cors from 'cors';
+import passport from 'passport';
 
 dotenv.config();
 
@@ -28,9 +30,16 @@ class App {
         '/uploads',
         express.static(path.join(__dirname, '../uploads'))
       );
-      this.initializeMiddlewares();
-      this.initializePassport();
-      this.initializeRoutes();
+
+      // set middlewares
+      this.app.use(express.json());
+      this.app.use(cors());
+      this.app.use(passport.initialize());
+      initializePassportStrategy();
+
+      // init routes and error handler
+      initializeRoutes(this.app);
+      this.app.use(errorHandler);
 
       this.app.listen(port, host, () => {
         console.log(`Server is running on port ${port}`);
@@ -49,18 +58,6 @@ class App {
     } catch (error) {
       console.error('Failed to start the application:', error);
     }
-  }
-
-  private initializeRoutes = () => {
-    initializeRoutes(this.app);
-  };
-
-  private initializeMiddlewares(): void {
-    initializeMiddlewares(this.app);
-  }
-
-  private initializePassport(): void {
-    initializePassportStrategy();
   }
 
   // Ensure the connection is properly awaited

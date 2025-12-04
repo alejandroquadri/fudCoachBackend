@@ -12,7 +12,6 @@ import { NotificationRoutes } from './notification.routes';
 import { IapRoutes } from './iap.routes';
 import { TestRoutes } from './test.routes';
 import { PoliciesRoutes } from './policies.routes';
-// import { AiMicroserviceRoutes } from './ai-microservice.routes';
 
 export const initializeRoutes = (app: Application) => {
   app.get('/', (_req: Request, res: Response) => {
@@ -24,7 +23,6 @@ export const initializeRoutes = (app: Application) => {
   app.use('/water-logs', authJWT, new WaterLogsRoutes().getRouter());
   app.use('/exercise-logs', authJWT, new ExerciseLogsRoutes().getRouter());
   app.use('/weight-logs', authJWT, new WeightLogsRoutes().getRouter());
-  // app.use('/ai', authJWT, new AiMicroserviceRoutes().getRouter());
   app.use('/profile', authJWT, new ProfileRoutes().getRouter());
   app.use('/notifications', authJWT, new NotificationRoutes().getRouter());
   app.use('/ai-routes', new AiPrivateRoutes().getRouter()); // rutas para que el ai interactue co la db
