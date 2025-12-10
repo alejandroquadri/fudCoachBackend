@@ -19,11 +19,12 @@ export class CoachController {
 
   async getWelcomeMes(userId: string) {
     const mes = `Hi! I'm your AI nutrition assistant 🤖🥗  
+
 I’m here 24/7 to help you stay accountable and reach your nutrition goals. You can share your meals with me through text or photos — I’ll estimate their calories and macronutrients and log them for you. You can also record your weight, and I’ll create a clean, easy-to-read chart so you can track your progress.
 
-I can answer nutrition questions and help you build meal ideas based on your preferences — and I’ll remember what you like (and what you don’t).
+I can answer nutrition questions and help you build meal ideas based on your preferences — and I’ll remember what you like and what you don’t.
 
-Just a quick note: I’m not a medical professional, and everything I provide is general wellness guidance. For medical conditions or therapeutic diets, please consult a licensed healthcare provider.
+Just a quick note: I’m not a medical professional, and everything I provide is general wellness guidance. For medical conditions or therapeutic diets, please consult a licensed healthcare provider. You can review my methodology and sources by tapping the info button in the top right.
 
 Ready to get started? 💪`;
 
