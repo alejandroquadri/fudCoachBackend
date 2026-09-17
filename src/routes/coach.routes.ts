@@ -1,5 +1,5 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
-import { CoachController, UserController } from '../controllers';
+import { CoachController, toAiProfile, UserController } from '../controllers';
 import { FatSecretService } from './../services';
 import multer from 'multer';
 import { UserProfile } from '../types';
@@ -74,7 +74,7 @@ export class CoachRoutes {
     try {
       const userPreferences = { _id: userId, deliveredWelcome: true };
 
-      await this.userCtrl.updateUser(userPreferences);
+      await this.userCtrl.updateProfileForUser(userId, userPreferences);
       res.status(200).json({ res: 'updated' });
     } catch (error) {
       next(error);
@@ -91,7 +91,7 @@ export class CoachRoutes {
       if (!userProfile) {
         throw new Error('no userProfile');
       }
-      const { _id, email, password, ...aiProfile } = userProfile;
+      const aiProfile = toAiProfile(userProfile);
       const state = await this.coachCtrl.initUserPreferences(
         userProfile._id as string,
         aiProfile

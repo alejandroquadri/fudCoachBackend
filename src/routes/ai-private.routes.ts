@@ -116,10 +116,7 @@ export class AiPrivateRoutes {
       user_id,
     }: { preferences: AiProfile; user_id: string } = req.body;
     try {
-      // something
-      const userPreferences = { _id: user_id, ...preferences };
-
-      await this.userCtrl.updateUser(userPreferences);
+      await this.userCtrl.updateProfileForUser(user_id, preferences);
       res.status(200).json({ res: 'Profile updated' });
     } catch (error) {
       next(error);

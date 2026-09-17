@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import bcrypt from 'bcryptjs';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
+import { randomUUID } from 'crypto';
 
 import { UserModel } from '../models';
 import { JoseService, TargetsCalcService } from '../services';
@@ -9,9 +10,58 @@ import {
   AiProfile,
   NutritionGoals,
   OnboardingState,
+  ProfileUpdateInput,
+  PublicUserProfile,
+  RegistrationUserInput,
   UserProfile,
 } from '../types';
 import { WeightLogsController } from './weight-log.controller';
+
+const PROFILE_FIELDS: Array<keyof ProfileUpdateInput> = [
+  'name',
+  'avatar',
+  'gender',
+  'lifeStyle',
+  'activityLevel',
+  'triedOtherApps',
+  'unitType',
+  'initWeight',
+  'height',
+  'birthdate',
+  'goal',
+  'weightGoal',
+  'goalVelocity',
+  'goalObstacle',
+  'dietType',
+  'outcome',
+  'nutritionGoals',
+  'dietaryRestrictions',
+  'allergies',
+  'dislikes',
+  'likes',
+  'meal_times',
+  'deliveredWelcome',
+];
+
+const pickProfileFields = (input: Partial<UserProfile>): ProfileUpdateInput => {
+  const output: ProfileUpdateInput = {};
+  for (const field of PROFILE_FIELDS) {
+    const value = input[field];
+    if (value !== undefined) {
+      Object.assign(output, { [field]: value });
+    }
+  }
+  return output;
+};
+
+const toPublicUser = (user: UserProfile): PublicUserProfile => {
+  const safeUser = { ...user };
+  delete safeUser.password;
+  return safeUser;
+};
+
+export const toAiProfile = (user: UserProfile): AiProfile =>
+  pickProfileFields(user) as AiProfile;
 
 export class UserController {
   userModel: UserModel = new UserModel();
@@ -23,9 +73,9 @@ export class UserController {
     email: string,
     password: string
   ): Promise<
-    string | { user: UserProfile; token: string; refreshToken: string }
+    string | { user: PublicUserProfile; token: string; refreshToken: string }
   > {
-    const user = await this.userModel
+    let user = await this.userModel
       .getUserByEmail(email)
       .catch((err: unknown) => console.log('error en mongo', err));
     if (!user) {
@@ -38,8 +88,9 @@ export class UserController {
       if (!isMatch) {
         return 'invalid_credentials';
       } else {
+        user = await this.ensureAppAccountToken(user);
         const { token, refreshToken } = this.createTokens(user._id as string);
-        return { user, token, refreshToken };
+        return { user: toPublicUser(user), token, refreshToken };
       }
     }
   }
@@ -54,8 +105,8 @@ export class UserController {
   async loginApple(
     idToken: string,
     register: boolean,
-    userData?: Partial<UserProfile>
-  ): Promise<{ user: UserProfile; token: string; refreshToken: string }> {
+    userData?: Partial<RegistrationUserInput>
+  ): Promise<{ user: PublicUserProfile; token: string; refreshToken: string }> {
     const { payload } = await JoseService.verifyAppleIdToken(
       idToken,
       this.ios_bundle_id
@@ -76,12 +127,18 @@ export class UserController {
     if (!user && emailFromApple) {
       user = await this.userModel.getUserByEmail(emailFromApple);
       if (user) {
-        user.appleSub = appleSub;
-        user.providers = Array.from(
+        const providers = Array.from(
           new Set([...(user.providers ?? []), 'apple'])
-        );
+        ) as Array<'email' | 'apple'>;
+        await this.userModel.editUser({
+          _id: user._id,
+          appleSub,
+          providers,
+          ...(isRelay ? { appleEmailPrivateRelay: true } : {}),
+        });
+        user.appleSub = appleSub;
+        user.providers = providers;
         if (isRelay) user.appleEmailPrivateRelay = true;
-        await this.userModel.editUser(user);
       }
     }
 
@@ -100,14 +157,15 @@ export class UserController {
         providers: ['apple'],
         appleSub,
         appleEmailPrivateRelay: !!emailFromApple && isRelay,
+        appAccountToken: randomUUID(),
+        deliveredWelcome: false,
       };
 
       // If onboarding provided more profile info, merge it in
       if (userData) {
         // Never override appleSub/providers set above, but merge the rest
         // Prefer the Apple email over user-provided if Apple gave one
-        const { password, email, providers, appleSub, ...rest } = userData;
-        Object.assign(doc, rest);
+        Object.assign(doc, pickProfileFields(userData));
 
         // // If onboarding also set a password, hash it so email+password login will work too
         // if (password && password.length > 0) {
@@ -124,6 +182,8 @@ export class UserController {
       if (!user) throw new Error('Error creating Apple user');
     }
 
+    user = await this.ensureAppAccountToken(user);
+
     if (user._id && register === true) {
       await this.weightLogsCtrl.createWeightLog({
         user_id: user._id,
@@ -133,7 +193,7 @@ export class UserController {
     }
 
     const { token, refreshToken } = this.createTokens(String(user._id));
-    return { user, token, refreshToken };
+    return { user: toPublicUser(user), token, refreshToken };
   }
 
   async hashtest(password: string) {
@@ -143,8 +203,8 @@ export class UserController {
   }
 
   async register(
-    userData: UserProfile
-  ): Promise<{ user: UserProfile; token: string; refreshToken: string }> {
+    userData: RegistrationUserInput
+  ): Promise<{ user: PublicUserProfile; token: string; refreshToken: string }> {
     const emailExists = await this.userModel.getUserByEmail(userData.email);
     if (emailExists) {
       throw new Error('email taken');
@@ -154,8 +214,16 @@ export class UserController {
     }
     const hashedPassword = await bcrypt.hash(userData.password, 8);
 
-    userData.password = hashedPassword;
-    const insertedData = await this.userModel.createUser(userData);
+    const userDocument = {
+      ...pickProfileFields(userData),
+      email: userData.email.toLowerCase(),
+      password: hashedPassword,
+      providers: ['email'] as Array<'email' | 'apple'>,
+      appAccountToken: randomUUID(),
+      deliveredWelcome: false,
+    } as UserProfile;
+
+    const insertedData = await this.userModel.createUser(userDocument);
     const id = insertedData.insertedId;
     const { token, refreshToken } = this.createTokens(id.toHexString());
     const user = await this.getUserById(insertedData.insertedId.toHexString());
@@ -169,11 +237,43 @@ export class UserController {
         weightLog: user.initWeight,
       });
     }
-    return { user, token, refreshToken };
+    return { user: toPublicUser(user), token, refreshToken };
   }
 
   async getUserById(id: string | ObjectId) {
     return this.userModel.getUserById(id);
+  }
+
+  async getPublicUserById(id: string | ObjectId) {
+    const user = await this.getUserById(id);
+    if (!user) return null;
+    const withAccountToken = await this.ensureAppAccountToken(user);
+    return toPublicUser(withAccountToken);
+  }
+
+  async updateProfileForUser(
+    id: string | ObjectId,
+    input: Partial<UserProfile>
+  ) {
+    return this.userModel.editUser({
+      _id: id,
+      ...pickProfileFields(input),
+    });
+  }
+
+  async ensureAppAccountToken(user: UserProfile): Promise<UserProfile> {
+    if (user.appAccountToken) return user;
+
+    const appAccountToken = randomUUID();
+    await this.userModel.editUser({ _id: user._id, appAccountToken });
+    return { ...user, appAccountToken };
+  }
+
+  async updateEntitlementForUser(
+    id: string | ObjectId,
+    entitlement: UserProfile['entitlement']
+  ) {
+    return this.userModel.editUser({ _id: id, entitlement });
   }
 
   async refreshAccessToken(oldRefreshToken: string) {
@@ -206,18 +306,6 @@ export class UserController {
       { expiresIn: '7d' } // expires in 7 days
     );
     return { token, refreshToken };
-  }
-
-  async updateUser(user: Partial<UserProfile> | (AiProfile & { _id: string })) {
-    try {
-      if (!user) {
-        throw new Error('User is required for updating');
-      }
-      console.log('user en controller', user);
-      return this.userModel.editUser(user);
-    } catch (error) {
-      throw new Error('Error updating user');
-    }
   }
 
   calculatePlan(userData: OnboardingState): NutritionGoals {

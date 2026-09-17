@@ -13,7 +13,8 @@ export interface UserProfile {
   providers?: Array<'email' | 'apple'>;
   appleSub?: string; // Apple's stable "sub" claim
   appleEmailPrivateRelay?: boolean; // optional flag
-  entitlement: Entitlement;
+  appAccountToken: string;
+  entitlement?: Entitlement;
 
   gender: string;
   lifeStyle: number;
@@ -39,6 +40,50 @@ export interface UserProfile {
   deliveredWelcome?: boolean; // optional flag to track if welcome message was sent
 }
 
+export type PublicUserProfile = Omit<UserProfile, 'password'>;
+
+export type RegistrationUserInput = Omit<
+  UserProfile,
+  | '_id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'providers'
+  | 'appleSub'
+  | 'appleEmailPrivateRelay'
+  | 'appAccountToken'
+  | 'entitlement'
+  | 'deliveredWelcome'
+>;
+
+export type ProfileUpdateInput = Partial<
+  Pick<
+    UserProfile,
+    | 'name'
+    | 'avatar'
+    | 'gender'
+    | 'lifeStyle'
+    | 'activityLevel'
+    | 'triedOtherApps'
+    | 'unitType'
+    | 'initWeight'
+    | 'height'
+    | 'birthdate'
+    | 'goal'
+    | 'weightGoal'
+    | 'goalVelocity'
+    | 'goalObstacle'
+    | 'dietType'
+    | 'outcome'
+    | 'nutritionGoals'
+    | 'dietaryRestrictions'
+    | 'allergies'
+    | 'dislikes'
+    | 'likes'
+    | 'meal_times'
+    | 'deliveredWelcome'
+  >
+>;
+
 export interface NutritionGoals {
   tdee: number;
   bmr: number;
@@ -52,7 +97,19 @@ export interface OnboardingState extends UserProfile {
   onboardingStep: number;
 }
 
-export type AiProfile = Omit<UserProfile, '_id' | 'email' | 'password'>;
+export type AiProfile = Omit<
+  UserProfile,
+  | '_id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'email'
+  | 'password'
+  | 'providers'
+  | 'appleSub'
+  | 'appleEmailPrivateRelay'
+  | 'appAccountToken'
+  | 'entitlement'
+>;
 
 // export interface User {
 //   _id?: ObjectId | string;

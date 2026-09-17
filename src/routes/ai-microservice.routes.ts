@@ -1,6 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
-import { AiMicroserviceController } from '../controllers';
-import { AiProfile, UserProfile } from '../types';
+import { AiMicroserviceController, toAiProfile } from '../controllers';
+import { UserProfile } from '../types';
 
 export class AiMicroserviceRoutes {
   private router: Router = express.Router();
@@ -58,7 +58,7 @@ export class AiMicroserviceRoutes {
         throw new Error('no userProfile');
       }
       console.log('llega user profile', userProfile);
-      const { _id, email, password, ...aiProfile } = userProfile;
+      const aiProfile = toAiProfile(userProfile);
       const state = await this.microserviceCtrl.initStatePreferences(
         userProfile._id as string,
         aiProfile

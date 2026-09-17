@@ -26,7 +26,7 @@ export const initializeRoutes = (app: Application) => {
   app.use('/profile', authJWT, new ProfileRoutes().getRouter());
   app.use('/notifications', authJWT, new NotificationRoutes().getRouter());
   app.use('/ai-routes', new AiPrivateRoutes().getRouter()); // rutas para que el ai interactue co la db
-  app.use('/iap', new IapRoutes().getRouter());
+  app.use('/iap', authJWT, new IapRoutes().getRouter());
   app.use('/users', new UserRoutes().getRouter());
   app.use('/policies', new PoliciesRoutes().getRouter());
   app.use('/test', new TestRoutes().getRouter());

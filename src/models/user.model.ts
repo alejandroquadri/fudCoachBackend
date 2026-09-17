@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { MongoService } from '../services'; // Import MongoService
-import { AiProfile, UserProfile } from '../types';
+import { UserProfile } from '../types';
 
 export class UserModel {
   private mongoSc = new MongoService<UserProfile>('users');
@@ -39,7 +39,7 @@ export class UserModel {
     return this.mongoSc.findOne({ appleSub });
   }
 
-  async editUser(user: Partial<UserProfile> | (AiProfile & { _id: string })) {
+  async editUser(user: Partial<UserProfile>) {
     if (!user._id) {
       throw new Error('User ID is required for editing');
     }

@@ -16,7 +16,10 @@ export type Entitlement = {
 
 export type ValidateIOSPayload = {
   transactionId: string;
-  originalTransactionId?: string;
-  productId?: string;
-  appAccountToken?: string;
+};
+
+export type EntitlementResponse = {
+  ok: true;
+  entitlement?: Entitlement;
+  appAccountToken: string;
 };

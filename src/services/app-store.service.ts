@@ -1,7 +1,11 @@
 import {
+  APIError,
+  APIException,
   AppStoreServerAPIClient,
   Environment,
+  JWSTransactionDecodedPayload,
   SignedDataVerifier,
+  Status,
 } from '@apple/app-store-server-library';
 import { promises as fs } from 'fs';
 import * as path from 'path';
@@ -28,9 +32,15 @@ export class AppStoreService {
 
   constructor() {
     // ✅ Keep only the essentials here (no PEM check here)
-    if (!this.issuerId || !this.keyId || !this.bundleId) {
+    if (
+      !this.issuerId ||
+      !this.keyId ||
+      !this.bundleId ||
+      !Number.isInteger(this.appAppleId) ||
+      this.appAppleId <= 0
+    ) {
       throw new Error(
-        'Missing App Store credentials (issuerId/keyId/bundleId)'
+        'Missing App Store credentials (issuerId/keyId/bundleId/appAppleId)'
       );
     }
     // (Optional) debug
@@ -123,8 +133,7 @@ export class AppStoreService {
    * Try PRODUCTION first; if that fails, try SANDBOX.
    */
   public async getVerifiedTransactionById(transactionId: string): Promise<{
-    transaction: any;
-    renewalInfo?: any | null;
+    transaction: JWSTransactionDecodedPayload;
     environment: 'PRODUCTION' | 'SANDBOX';
   }> {
     await this.ensureVerifiers();
@@ -137,9 +146,9 @@ export class AppStoreService {
           'signedTransactionInfo (PRODUCTION)'
         )
       );
-      return { transaction: tx, renewalInfo: null, environment: 'PRODUCTION' };
-    } catch {
-      // fall through to sandbox
+      return { transaction: tx, environment: 'PRODUCTION' };
+    } catch (error) {
+      if (!this.isTransactionNotFound(error)) throw error;
     }
 
     const sand = await this.sandboxClient.getTransactionInfo(transactionId);
@@ -149,7 +158,7 @@ export class AppStoreService {
         'signedTransactionInfo (SANDBOX)'
       )
     );
-    return { transaction: tx, renewalInfo: null, environment: 'SANDBOX' };
+    return { transaction: tx, environment: 'SANDBOX' };
   }
 
   private requireString(val: string | undefined, what: string): string {
@@ -157,35 +166,74 @@ export class AppStoreService {
     return val;
   }
 
-  /**
-   * Check if a subscription is still active for a given originalTransactionId.
-   * Returns { active: boolean, environment: 'PRODUCTION' | 'SANDBOX', raw: StatusResponse }
-   */
-  public async checkSubscriptionStatus(originalTransactionId: string) {
+  public async getVerifiedSubscriptionStatus(originalTransactionId: string) {
     await this.ensureVerifiers();
 
     const check = async (
       client: AppStoreServerAPIClient,
+      verifier: SignedDataVerifier,
       env: 'PRODUCTION' | 'SANDBOX'
     ) => {
       const res = await client.getAllSubscriptionStatuses(
         originalTransactionId
       );
 
-      // Each 'lastTransactions' item has a 'status' (1 = active, 2 = inGracePeriod, 3 = expired, 4 = revoked)
-      const active = !!res.data?.some(group =>
-        group.lastTransactions?.some(
-          item => item.status === 1 || item.status === 2
-        )
-      );
+      const matchingTransactions =
+        res.data
+          ?.flatMap(group => group.lastTransactions ?? [])
+          .filter(
+            item => item.originalTransactionId === originalTransactionId
+          ) ?? [];
+      const latest =
+        matchingTransactions.find(
+          item =>
+            item.status === Status.ACTIVE ||
+            item.status === Status.BILLING_GRACE_PERIOD
+        ) ?? matchingTransactions[0];
 
-      return { active, environment: env, raw: res };
+      if (!latest?.signedTransactionInfo) {
+        throw new Error('Apple returned no signed subscription transaction');
+      }
+
+      const transaction = await verifier.verifyAndDecodeTransaction(
+        latest.signedTransactionInfo
+      );
+      const active =
+        latest.status === Status.ACTIVE ||
+        latest.status === Status.BILLING_GRACE_PERIOD;
+
+      return {
+        active,
+        status: latest.status,
+        transaction,
+        environment: env,
+      };
     };
 
     try {
-      return await check(this.prodClient, 'PRODUCTION');
-    } catch {
-      return await check(this.sandboxClient, 'SANDBOX');
+      return await check(this.prodClient, this.prodVerifier, 'PRODUCTION');
+    } catch (error) {
+      if (!this.isTransactionNotFound(error)) throw error;
+      return check(this.sandboxClient, this.sandboxVerifier, 'SANDBOX');
     }
+  }
+
+  public async setAppAccountToken(
+    originalTransactionId: string,
+    appAccountToken: string,
+    environment: 'PRODUCTION' | 'SANDBOX'
+  ) {
+    await this.ensureVerifiers();
+    const client =
+      environment === 'PRODUCTION' ? this.prodClient : this.sandboxClient;
+    await client.setAppAccountToken(originalTransactionId, { appAccountToken });
+  }
+
+  private isTransactionNotFound(error: unknown) {
+    return (
+      error instanceof APIException &&
+      (error.apiError === APIError.TRANSACTION_ID_NOT_FOUND ||
+        error.apiError === APIError.ORIGINAL_TRANSACTION_ID_NOT_FOUND)
+    );
   }
 }

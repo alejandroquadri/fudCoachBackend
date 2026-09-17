@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response, Router } from 'express';
-import { ValidateIOSPayload } from '../types';
+import { UserProfile, ValidateIOSPayload } from '../types';
 import { IapController } from '../controllers';
 
 export class IapRoutes {
@@ -12,8 +12,8 @@ export class IapRoutes {
 
   private initializeRoutes(): void {
     this.router.get('/', this.test);
+    this.router.get('/entitlement', this.getEntitlement);
     this.router.post('/validate-ios', this.validateIos);
-    this.router.post('/validate-subs-status', this.validateStatus);
   }
 
   public getRouter(): Router {
@@ -29,28 +29,27 @@ export class IapRoutes {
       const { payload } = req.body as {
         payload: ValidateIOSPayload;
       };
-      console.log('llega validateIOs', payload);
-      const out = await this.iapCtrl.validateIos(payload);
+      const out = await this.iapCtrl.validateIos(
+        payload,
+        req.user as UserProfile
+      );
 
-      if (!out.ok) return res.status(400).json(out);
+      if (!out.ok) return res.status(422).json(out);
       return res.status(200).json(out);
     } catch (error) {
       console.log(error);
-      next('Error validating ios');
+      next(error);
     }
   };
 
-  validateStatus = async (req: Request, res: Response, next: NextFunction) => {
+  getEntitlement = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { originalTransactionId } = req.body;
-      console.log('llega tx original', originalTransactionId);
-      const out = await this.iapCtrl.checkSubscriptionStatus(
-        originalTransactionId
+      const out = await this.iapCtrl.getCurrentEntitlement(
+        req.user as UserProfile
       );
       res.status(200).json(out);
     } catch (error) {
-      console.log(error);
-      next('Error validating status of subscription');
+      next(error);
     }
   };
 }

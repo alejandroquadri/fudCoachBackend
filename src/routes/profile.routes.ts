@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response, Router } from 'express';
 import { UserController } from '../controllers/user.controller';
+import { UserProfile } from '../types';
 
 export class ProfileRoutes {
   private router: Router = express.Router();
@@ -23,12 +24,10 @@ export class ProfileRoutes {
   private test = (req: Request, res: Response) => res.send('Profile routes Ok');
 
   private getUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.body;
     try {
-      if (!id) {
-        throw new Error('no id');
-      }
-      const user = await this.userController.getUserById(id);
+      const currentUser = req.user as UserProfile;
+      if (!currentUser._id) throw new Error('Authenticated user has no ID');
+      const user = await this.userController.getPublicUserById(currentUser._id);
       res.status(200).json(user);
     } catch (error) {
       next(error);
@@ -45,7 +44,12 @@ export class ProfileRoutes {
       if (!user) {
         throw new Error('no user object');
       }
-      const ret = await this.userController.updateUser(user);
+      const currentUser = req.user as UserProfile;
+      if (!currentUser._id) throw new Error('Authenticated user has no ID');
+      const ret = await this.userController.updateProfileForUser(
+        currentUser._id,
+        user
+      );
       res.status(200).json(ret);
     } catch (error: unknown) {
       next(error);
@@ -57,10 +61,9 @@ export class ProfileRoutes {
     res: Response,
     next: NextFunction
   ) => {
-    const { id } = req.body;
     try {
-      if (!id) throw new Error('no id');
-      await this.userController.deleteUser(id);
+      const currentUser = req.user as UserProfile;
+      await this.userController.deleteUser(String(currentUser._id));
       res.status(200).json({ success: true });
     } catch (error: unknown) {
       next(error);

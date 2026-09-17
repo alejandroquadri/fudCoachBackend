@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response, Router } from 'express';
 
 import { UserController } from '../controllers';
-import { UserProfile } from '../types';
+import { RegistrationUserInput } from '../types';
 
 export class UserRoutes {
   private router: Router = express.Router();
@@ -16,10 +16,8 @@ export class UserRoutes {
     this.router.post('/login', this.login);
     this.router.post('/register', this.register);
     this.router.post('/refresh-token', this.refreshToken);
-    this.router.post('/get-user-by-id', this.getUserByID);
     this.router.post('/login-apple', this.loginApple);
     this.router.post('/calculate-plan', this.calculatePlan);
-    this.router.post('/grant', this.grant);
   }
 
   public getRouter(): Router {
@@ -28,7 +26,7 @@ export class UserRoutes {
 
   register = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { user } = req.body as { user: UserProfile };
+      const { user } = req.body as { user: RegistrationUserInput };
       const userData = await this.userController.register(user);
       res.status(200).send({
         auth: true,
@@ -69,7 +67,7 @@ export class UserRoutes {
       const { idToken, register, userData } = req.body as {
         idToken: string;
         register: boolean;
-        userData?: Partial<UserProfile>;
+        userData?: Partial<RegistrationUserInput>;
       };
       if (!idToken) {
         return res.status(400).json({ error: 'idToken is required' });
@@ -107,46 +105,11 @@ export class UserRoutes {
     }
   };
 
-  getUserByID = async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.body;
-    console.log('llega este id', id);
-    try {
-      const user = await this.userController.getUserById(id);
-      res.status(200).json({ user });
-    } catch (error: unknown) {
-      next(error);
-    }
-  };
-
   calculatePlan = (req: Request, res: Response, next: NextFunction) => {
     const { userData } = req.body;
     try {
       const plan = this.userController.calculatePlan(userData);
       res.status(200).json(plan);
-    } catch (error: unknown) {
-      next(error);
-    }
-  };
-
-  grant = async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req.body;
-    try {
-      if (!userId) {
-        throw new Error('no user id');
-      }
-      const obj: Partial<UserProfile> = {
-        _id: userId,
-        entitlement: {
-          active: true,
-          productId: 'manual',
-          originalTransactionId: 'manual',
-          platform: 'ios',
-          grant: { type: 'test', untilISO: '2026-01-01T00:00:00Z' },
-        },
-      };
-      console.log('user que mando', obj);
-      const ret = await this.userController.updateUser(obj);
-      res.status(200).json(ret);
     } catch (error: unknown) {
       next(error);
     }
