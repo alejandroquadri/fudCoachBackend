@@ -39,6 +39,20 @@ export class UserModel {
     return this.mongoSc.findOne({ appleSub });
   }
 
+  getUserByAppAccountToken(
+    appAccountToken: string
+  ): Promise<UserProfile | null> {
+    return this.mongoSc.findOne({ appAccountToken });
+  }
+
+  getUserByOriginalTransactionId(
+    originalTransactionId: string
+  ): Promise<UserProfile | null> {
+    return this.mongoSc.findOne({
+      'entitlement.originalTransactionId': originalTransactionId,
+    });
+  }
+
   async editUser(user: Partial<UserProfile>) {
     if (!user._id) {
       throw new Error('User ID is required for editing');

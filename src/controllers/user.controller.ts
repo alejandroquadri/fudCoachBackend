@@ -244,6 +244,14 @@ export class UserController {
     return this.userModel.getUserById(id);
   }
 
+  async getUserByAppAccountToken(appAccountToken: string) {
+    return this.userModel.getUserByAppAccountToken(appAccountToken);
+  }
+
+  async getUserByOriginalTransactionId(originalTransactionId: string) {
+    return this.userModel.getUserByOriginalTransactionId(originalTransactionId);
+  }
+
   async getPublicUserById(id: string | ObjectId) {
     const user = await this.getUserById(id);
     if (!user) return null;

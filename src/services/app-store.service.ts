@@ -3,7 +3,9 @@ import {
   APIException,
   AppStoreServerAPIClient,
   Environment,
+  JWSRenewalInfoDecodedPayload,
   JWSTransactionDecodedPayload,
+  ResponseBodyV2DecodedPayload,
   SignedDataVerifier,
   Status,
 } from '@apple/app-store-server-library';
@@ -198,6 +200,9 @@ export class AppStoreService {
       const transaction = await verifier.verifyAndDecodeTransaction(
         latest.signedTransactionInfo
       );
+      const renewalInfo = latest.signedRenewalInfo
+        ? await verifier.verifyAndDecodeRenewalInfo(latest.signedRenewalInfo)
+        : undefined;
       const active =
         latest.status === Status.ACTIVE ||
         latest.status === Status.BILLING_GRACE_PERIOD;
@@ -206,6 +211,7 @@ export class AppStoreService {
         active,
         status: latest.status,
         transaction,
+        renewalInfo,
         environment: env,
       };
     };
@@ -227,6 +233,43 @@ export class AppStoreService {
     const client =
       environment === 'PRODUCTION' ? this.prodClient : this.sandboxClient;
     await client.setAppAccountToken(originalTransactionId, { appAccountToken });
+  }
+
+  public async getVerifiedNotification(signedPayload: string): Promise<{
+    notification: ResponseBodyV2DecodedPayload;
+    transaction?: JWSTransactionDecodedPayload;
+    renewalInfo?: JWSRenewalInfoDecodedPayload;
+    environment: 'PRODUCTION' | 'SANDBOX';
+  }> {
+    await this.ensureVerifiers();
+
+    const decode = async (
+      verifier: SignedDataVerifier,
+      environment: 'PRODUCTION' | 'SANDBOX'
+    ) => {
+      const notification = await verifier.verifyAndDecodeNotification(
+        signedPayload
+      );
+      const signedTransactionInfo = notification.data?.signedTransactionInfo;
+      const signedRenewalInfo = notification.data?.signedRenewalInfo;
+
+      return {
+        notification,
+        transaction: signedTransactionInfo
+          ? await verifier.verifyAndDecodeTransaction(signedTransactionInfo)
+          : undefined,
+        renewalInfo: signedRenewalInfo
+          ? await verifier.verifyAndDecodeRenewalInfo(signedRenewalInfo)
+          : undefined,
+        environment,
+      };
+    };
+
+    try {
+      return await decode(this.prodVerifier, 'PRODUCTION');
+    } catch {
+      return decode(this.sandboxVerifier, 'SANDBOX');
+    }
   }
 
   private isTransactionNotFound(error: unknown) {

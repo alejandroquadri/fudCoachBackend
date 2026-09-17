@@ -20,6 +20,24 @@ export class IapRoutes {
     return this.router;
   }
 
+  appStoreNotification = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const signedPayload = req.body?.signedPayload;
+    if (typeof signedPayload !== 'string' || !signedPayload) {
+      return res.status(400).json({ message: 'Missing signedPayload' });
+    }
+
+    try {
+      await this.iapCtrl.processAppStoreNotification(signedPayload);
+      return res.sendStatus(200);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   test = async (_req: Request, res: Response) => {
     res.status(200).json({ mes: 'succes iap' });
   };

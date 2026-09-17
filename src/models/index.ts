@@ -7,3 +7,4 @@ export * from './exercise-logs.model';
 export * from './weight-logs.model';
 export * from './not-token.model';
 export * from './not-settings.model';
+export * from './iap.model';

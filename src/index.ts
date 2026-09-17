@@ -6,6 +6,7 @@ import { errorHandler } from './middlewares';
 import { initializePassportStrategy } from './strategies/jwtStrategy';
 import { initializeRoutes } from './routes';
 import { stopAgenda, registerNotificationJobs } from './jobs';
+import { IapModel } from './models';
 import cors from 'cors';
 import passport from 'passport';
 
@@ -22,6 +23,7 @@ class App {
   public async start(port: number, host = '0.0.0.0'): Promise<void> {
     try {
       await this.connect(); // Ensure MongoDB is connected before anything else
+      await new IapModel().ensureIndexes();
 
       //  define Agenda jobs then start worker
       registerNotificationJobs(); // definitions first

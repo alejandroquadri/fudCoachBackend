@@ -1,5 +1,5 @@
 import { Application, Request, Response } from 'express';
-import { authJWT } from '../middlewares';
+import { authJWT, requireActiveEntitlement } from '../middlewares';
 import { CoachRoutes } from './coach.routes';
 import { UserRoutes } from './user.routes';
 import { FoodLogsRoutes } from './food-logs.routes';
@@ -18,15 +18,42 @@ export const initializeRoutes = (app: Application) => {
     res.send('Hello, cruel nice World!');
   });
 
-  app.use('/coach', authJWT, new CoachRoutes().getRouter()); // toda la interaccion con el ai
-  app.use('/food-logs', authJWT, new FoodLogsRoutes().getRouter());
-  app.use('/water-logs', authJWT, new WaterLogsRoutes().getRouter());
-  app.use('/exercise-logs', authJWT, new ExerciseLogsRoutes().getRouter());
-  app.use('/weight-logs', authJWT, new WeightLogsRoutes().getRouter());
+  app.use(
+    '/coach',
+    authJWT,
+    requireActiveEntitlement,
+    new CoachRoutes().getRouter()
+  ); // toda la interaccion con el ai
+  app.use(
+    '/food-logs',
+    authJWT,
+    requireActiveEntitlement,
+    new FoodLogsRoutes().getRouter()
+  );
+  app.use(
+    '/water-logs',
+    authJWT,
+    requireActiveEntitlement,
+    new WaterLogsRoutes().getRouter()
+  );
+  app.use(
+    '/exercise-logs',
+    authJWT,
+    requireActiveEntitlement,
+    new ExerciseLogsRoutes().getRouter()
+  );
+  app.use(
+    '/weight-logs',
+    authJWT,
+    requireActiveEntitlement,
+    new WeightLogsRoutes().getRouter()
+  );
   app.use('/profile', authJWT, new ProfileRoutes().getRouter());
   app.use('/notifications', authJWT, new NotificationRoutes().getRouter());
   app.use('/ai-routes', new AiPrivateRoutes().getRouter()); // rutas para que el ai interactue co la db
-  app.use('/iap', authJWT, new IapRoutes().getRouter());
+  const iapRoutes = new IapRoutes();
+  app.post('/iap/app-store-notifications', iapRoutes.appStoreNotification);
+  app.use('/iap', authJWT, iapRoutes.getRouter());
   app.use('/users', new UserRoutes().getRouter());
   app.use('/policies', new PoliciesRoutes().getRouter());
   app.use('/test', new TestRoutes().getRouter());

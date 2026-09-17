@@ -1,5 +1,6 @@
 export * from './authJWT.middleware';
 export * from './error.middleware';
+export * from './require-active-entitlement.middleware';
 
 // import express, { NextFunction, Request, Response } from 'express';
 // import cors from 'cors';
