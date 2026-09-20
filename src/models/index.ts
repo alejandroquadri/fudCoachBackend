@@ -8,3 +8,6 @@ export * from './weight-logs.model';
 export * from './not-token.model';
 export * from './not-settings.model';
 export * from './iap.model';
+export * from './ai-conversation.model';
+export * from './ai-message.model';
+export * from './ai-run.model';
