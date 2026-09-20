@@ -7,6 +7,7 @@ import { initializePassportStrategy } from './strategies/jwtStrategy';
 import { initializeRoutes } from './routes';
 import { stopAgenda, registerNotificationJobs } from './jobs';
 import { IapModel } from './models';
+import { aiAgentService } from './services';
 import cors from 'cors';
 import passport from 'passport';
 
@@ -24,6 +25,7 @@ class App {
     try {
       await this.connect(); // Ensure MongoDB is connected before anything else
       await new IapModel().ensureIndexes();
+      await aiAgentService.initialize();
 
       //  define Agenda jobs then start worker
       registerNotificationJobs(); // definitions first
@@ -52,6 +54,7 @@ class App {
         process.on(sig as NodeJS.Signals, async () => {
           try {
             await stopAgenda();
+            await mongoInstance.close();
           } finally {
             process.exit(0);
           }

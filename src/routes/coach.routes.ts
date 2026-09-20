@@ -36,6 +36,7 @@ export class CoachRoutes {
     this.router.post('/mark-welcome-delivered', this.markWelcomeDelivered);
     this.router.post('/get-messages', this.getMessages);
     this.router.post('/get-answer', this.coachAnswer);
+    this.router.post('/reset-conversation', this.resetConversation);
     this.router.post(
       '/parse-image',
       this.upload.single('image'),
@@ -56,8 +57,8 @@ export class CoachRoutes {
     res: Response,
     next: NextFunction
   ) => {
-    const { userId } = req.body;
     try {
+      const userId = this.authenticatedUserId(req);
       const welcomeMes = await this.coachCtrl.getWelcomeMes(userId);
       res.status(200).json(welcomeMes);
     } catch (error) {
@@ -70,8 +71,8 @@ export class CoachRoutes {
     res: Response,
     next: NextFunction
   ) => {
-    const { userId } = req.body;
     try {
+      const userId = this.authenticatedUserId(req);
       const userPreferences = { _id: userId, deliveredWelcome: true };
 
       await this.userCtrl.updateProfileForUser(userId, userPreferences);
@@ -86,16 +87,11 @@ export class CoachRoutes {
     res: Response,
     next: NextFunction
   ) => {
-    const { userProfile }: { userProfile: UserProfile } = req.body;
     try {
-      if (!userProfile) {
-        throw new Error('no userProfile');
-      }
-      const aiProfile = toAiProfile(userProfile);
-      const state = await this.coachCtrl.initUserPreferences(
-        userProfile._id as string,
-        aiProfile
-      );
+      const currentUser = req.user as UserProfile;
+      const userId = this.authenticatedUserId(req);
+      const aiProfile = toAiProfile(currentUser);
+      const state = await this.coachCtrl.initUserPreferences(userId, aiProfile);
       res.status(200).json(state);
     } catch (error: unknown) {
       next(error);
@@ -103,13 +99,8 @@ export class CoachRoutes {
   };
 
   getMessages = async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req.body;
-    console.log('llega a getMsgs', userId);
     try {
-      if (!userId) {
-        throw new Error('no user id');
-      }
-      console.log('pido mensajes');
+      const userId = this.authenticatedUserId(req);
       const messages = await this.coachCtrl.getMessages(userId);
       res.status(200).json(messages);
     } catch (error: unknown) {
@@ -122,16 +113,18 @@ export class CoachRoutes {
     res: Response,
     next: NextFunction
   ) => {
-    const { message, userId } = req.body;
-    console.log('coach answer input', message, userId);
+    const { message, clientRequestId } = req.body;
     try {
-      if (!message || !userId) {
-        throw new Error('missing message or user ID');
-      }
+      const userId = this.authenticatedUserId(req);
+      if (!message) throw new Error('missing message');
       if (typeof message !== 'string') {
         throw new Error('message is not a string');
       }
-      const answer = await this.coachCtrl.coachResponse(message, userId);
+      const answer = await this.coachCtrl.coachResponse(
+        message,
+        userId,
+        typeof clientRequestId === 'string' ? clientRequestId : undefined
+      );
       res.status(200).json(answer);
     } catch (error: unknown) {
       next(error);
@@ -144,27 +137,55 @@ export class CoachRoutes {
     next: NextFunction
   ) => {
     try {
-      console.log(req.body);
-      const userId = req.body.userId;
+      const userId = this.authenticatedUserId(req);
       const file = req.file;
 
-      if (!userId) {
-        throw new Error('Missing userId');
-      }
       if (!file) {
         throw new Error('No image file');
       }
 
-      console.log('Received image from user:', userId);
-      console.log('Image size:', file.size);
-
-      // 👇 Use the imageBase64 or imageUrl with your AI tool
-      const answer = await this.coachCtrl.parseImage(file, userId);
+      const clientRequestId =
+        typeof req.body.clientRequestId === 'string'
+          ? req.body.clientRequestId
+          : undefined;
+      const answer = await this.coachCtrl.parseImage(
+        file,
+        userId,
+        clientRequestId
+      );
       res.status(200).json(answer);
     } catch (error: unknown) {
       next(error);
     }
   };
+
+  private resetConversation = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const result = await this.coachCtrl.resetConversation(
+        this.authenticatedUserId(req)
+      );
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private authenticatedUserId(req: Request) {
+    const currentUser = req.user as UserProfile | undefined;
+    if (!currentUser?._id) throw new Error('Authenticated user has no ID');
+    const userId = String(currentUser._id);
+    const suppliedUserId = req.body?.userId;
+    if (suppliedUserId && String(suppliedUserId) !== userId) {
+      throw new Error(
+        'The supplied user ID does not match the authenticated user'
+      );
+    }
+    return userId;
+  }
 
   private getFood = async (req: Request, res: Response, next: NextFunction) => {
     console.log('llega get food');

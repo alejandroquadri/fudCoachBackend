@@ -1,17 +1,11 @@
 import { AiProfile, ChatMsg } from '../types';
-import { ObjectId } from 'mongodb';
-import { ChatModel, UserModel } from '../models';
-import { AiMicroserviceController } from './ai-microservice.controller';
+import { aiAgentService } from '../services';
 import sharp from 'sharp';
 
 export class CoachController {
-  chatModel: ChatModel = new ChatModel();
-  userModel: UserModel = new UserModel();
-  microserviceCtrl: AiMicroserviceController = new AiMicroserviceController();
-
   async initUserPreferences(userId: string, preferences: AiProfile) {
     try {
-      return this.microserviceCtrl.initStatePreferences(userId, preferences);
+      return aiAgentService.initializePreferences(userId, preferences);
     } catch (error) {
       throw new Error(`Error inicializando preferencias: ${error}`);
     }
@@ -28,38 +22,26 @@ Just a quick note: I’m not a medical professional, and everything I provide is
 
 Ready to get started? 💪`;
 
-    await this.microserviceCtrl.appendAiMessage(userId, mes);
-    const aiWelcomeMsg = this.buildUserMsg(mes, userId, 'ai');
-
-    // guardo mensaje de bienvenida como primer mensage
-    await this.chatModel.saveMessage(aiWelcomeMsg);
-    return aiWelcomeMsg;
+    return aiAgentService.appendAssistantMessage(userId, mes, 'welcome', {
+      kind: 'welcome_v1',
+    });
   }
 
   getMessages = (userId: string) => {
-    return this.chatModel.getMessages(userId);
+    return aiAgentService.getMessages(userId);
   };
 
-  async coachResponse(message: string, userId: string): Promise<ChatMsg> {
+  async coachResponse(
+    message: string,
+    userId: string,
+    clientRequestId?: string
+  ): Promise<ChatMsg> {
     try {
-      const user = await this.userModel.getUserById(userId);
-      if (!user) {
-        throw new Error('No se encontró usuario');
-      }
-
-      // pido respuesta al ai si no se ha completado QA
-
-      const aiAnswer = await this.microserviceCtrl.getAiResponse(
+      return await aiAgentService.respond({
         message,
-        userId
-      );
-      // salvo mensage de usuario
-      const userMsg = this.buildUserMsg(message, userId, 'user');
-      await this.chatModel.saveMessage(userMsg);
-      // salvo mensaje de ai
-      const aiChatMsg = this.buildUserMsg(aiAnswer.response, userId, 'ai');
-      await this.chatModel.saveMessage(aiChatMsg);
-      return aiChatMsg;
+        userId,
+        clientRequestId,
+      });
     } catch (error) {
       throw new Error(`Error obteniendo respuesta de ai ${error}`);
     }
@@ -67,37 +49,53 @@ Ready to get started? 💪`;
 
   async parseImage(
     file: Express.Multer.File,
-    userId: string
+    userId: string,
+    clientRequestId?: string
   ): Promise<ChatMsg> {
     try {
-      const processed = await sharp(file.buffer).rotate().toBuffer();
-
-      const aiAnswer = await this.microserviceCtrl.parseImage(
+      const processed = await sharp(file.buffer).rotate().jpeg().toBuffer();
+      return await aiAgentService.respond({
         userId,
-        processed
-      );
-      console.log('respuesta de parsing img', aiAnswer.response);
-      const aiChatMsg = this.buildUserMsg(aiAnswer.response, userId, 'ai');
-
-      // salvo devolucion de ai
-      await this.chatModel.saveMessage(aiChatMsg);
-      return aiChatMsg;
+        message: '[User uploaded an image]',
+        clientRequestId,
+        image: {
+          buffer: processed,
+          mimeType: 'image/jpeg',
+          filename: file.originalname,
+        },
+      });
     } catch (error) {
       console.log('Error parsing Image', error);
       throw new Error('Error parsing Image');
     }
   }
 
-  private buildUserMsg(
-    content: string,
+  getState(userId: string) {
+    return aiAgentService.getState(userId);
+  }
+
+  resetConversation(userId: string) {
+    return aiAgentService.resetConversation(userId);
+  }
+
+  appendAiMessage(
     userId: string,
-    sender: 'ai' | 'user'
-  ): ChatMsg {
-    return {
-      userId: new ObjectId(userId),
-      sender,
+    content: string,
+    metadata?: Record<string, unknown>
+  ) {
+    return aiAgentService.appendAssistantMessage(
+      userId,
       content,
-      timestamp: new Date(),
-    };
+      'text',
+      metadata
+    );
+  }
+
+  appendHumanMessage(
+    userId: string,
+    content: string,
+    metadata?: Record<string, unknown>
+  ) {
+    return aiAgentService.appendHumanMessage(userId, content, metadata);
   }
 }

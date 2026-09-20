@@ -6,7 +6,6 @@ import { FoodLogsRoutes } from './food-logs.routes';
 import { WaterLogsRoutes } from './water-logs.routes';
 import { ExerciseLogsRoutes } from './exercise-logs.routes';
 import { WeightLogsRoutes } from './weight-logs.routes';
-import { AiPrivateRoutes } from './ai-private.routes';
 import { ProfileRoutes } from './profile.routes';
 import { NotificationRoutes } from './notification.routes';
 import { IapRoutes } from './iap.routes';
@@ -50,7 +49,6 @@ export const initializeRoutes = (app: Application) => {
   );
   app.use('/profile', authJWT, new ProfileRoutes().getRouter());
   app.use('/notifications', authJWT, new NotificationRoutes().getRouter());
-  app.use('/ai-routes', new AiPrivateRoutes().getRouter()); // rutas para que el ai interactue co la db
   const iapRoutes = new IapRoutes();
   app.post('/iap/app-store-notifications', iapRoutes.appStoreNotification);
   app.use('/iap', authJWT, iapRoutes.getRouter());
