@@ -17,6 +17,10 @@ export class AiRunModel {
         { conversationId: 1, createdAt: -1 },
         { name: 'ai_run_conversation_history' }
       ),
+      this.collection.createIndex(
+        { conversationId: 1, turnId: 1 },
+        { unique: true, name: 'ai_run_turn_unique' }
+      ),
     ]);
   }
 
@@ -31,10 +35,24 @@ export class AiRunModel {
     return this.collection.findOne({ runId });
   }
 
+  getByTurn(conversationId: ObjectId, turnId: string) {
+    return this.collection.findOne({ conversationId, turnId });
+  }
+
   async setRoute(runId: string, route: string) {
     await this.collection.updateOne(
       { runId },
       { $set: { route, updatedAt: new Date() } }
+    );
+  }
+
+  async restart(runId: string) {
+    await this.collection.updateOne(
+      { runId },
+      {
+        $set: { status: 'running', updatedAt: new Date() },
+        $unset: { error: '', completedAt: '' },
+      }
     );
   }
 
@@ -78,4 +96,3 @@ export class AiRunModel {
     );
   }
 }
-

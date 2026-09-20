@@ -65,4 +65,3 @@ export interface AiMessageInput {
   userId: string;
   clientRequestId?: string;
 }
-

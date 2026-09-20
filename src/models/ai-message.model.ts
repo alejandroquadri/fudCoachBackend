@@ -53,12 +53,19 @@ export class AiMessageModel {
     });
   }
 
-  list(conversationId: ObjectId, limit = 100) {
-    return this.collection
+  findWelcome(conversationId: ObjectId) {
+    return this.collection.findOne({
+      conversationId,
+      role: 'assistant',
+      kind: 'welcome',
+    });
+  }
+
+  list(conversationId: ObjectId, limit = 0) {
+    const cursor = this.collection
       .find({ conversationId })
-      .sort({ createdAt: -1, _id: -1 })
-      .limit(limit)
-      .toArray();
+      .sort({ createdAt: -1, _id: -1 });
+    if (limit > 0) cursor.limit(limit);
+    return cursor.toArray();
   }
 }
-
