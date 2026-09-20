@@ -40,11 +40,11 @@ export class AiModel {
 
   saveWeightLog = async (userId: string, weightLog: number) => {
     try {
-      const result = await mongoInstance.db.collection('users').updateOne(
+      const result = await mongoInstance.db.collection<any>('users').updateOne(
         { _id: new ObjectId(userId) }, // Filter to match the document
         {
           $push: { weightLogs: { weightLog, date: new Date() } }, // Push the new weight log to the array
-        },
+        } as any,
         { upsert: false } // Set to true if you want to create a new document when no document matches
       );
       return result;

@@ -1,6 +1,6 @@
 
 # ---- Build stage: compile TypeScript to dist/ ----
-FROM node:20-alpine AS build
+FROM node:23.1-alpine AS build
 WORKDIR /app
 
 # Install deps first (better layer caching)
@@ -14,7 +14,7 @@ COPY public ./public
 RUN yarn build   # runs: tsc --project tsconfig.json
 
 # ---- Runtime stage: run compiled JS ----
-FROM node:20-alpine
+FROM node:23.1-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -33,5 +33,4 @@ COPY secrets/appstore_private_key.p8 ./secrets/appstore_private_key.p8
 ENV PORT=3000
 EXPOSE 3000
 CMD ["node","dist/index.js"]
-
 
