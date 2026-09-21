@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { ClientSession, ObjectId } from 'mongodb';
 import { mongoInstance } from '../../connection';
 import { AiFoodLogPayload, AiExerciseLogPayload, AiRun } from '../../types';
+import { applyPreferenceListChange } from './ai-utils';
 
 export type PreferenceListChange = {
   operation: 'add' | 'remove' | 'replace';
@@ -92,10 +93,13 @@ export class AiActionsService {
       const update: Record<string, unknown> = {};
       if (change.name?.trim()) update.name = change.name.trim();
       if (change.likes) {
-        update.likes = this.applyListChange(user.likes, change.likes);
+        update.likes = applyPreferenceListChange(user.likes, change.likes);
       }
       if (change.dislikes) {
-        update.dislikes = this.applyListChange(user.dislikes, change.dislikes);
+        update.dislikes = applyPreferenceListChange(
+          user.dislikes,
+          change.dislikes
+        );
       }
       if (Object.keys(update).length === 0) {
         throw new Error('No supported preference change was detected');
@@ -107,28 +111,6 @@ export class AiActionsService {
         { session }
       );
       return update;
-    });
-  }
-
-  private applyListChange(current: unknown, change: PreferenceListChange) {
-    const existing = this.normalizeList(Array.isArray(current) ? current : []);
-    const values = this.normalizeList(change.values);
-    if (change.operation === 'replace') return values;
-    if (change.operation === 'remove') {
-      const removed = new Set(values.map(value => value.toLowerCase()));
-      return existing.filter(value => !removed.has(value.toLowerCase()));
-    }
-    return this.normalizeList([...existing, ...values]);
-  }
-
-  private normalizeList(values: unknown[]) {
-    const seen = new Set<string>();
-    return values.flatMap(value => {
-      const normalized = String(value).trim();
-      const key = normalized.toLowerCase();
-      if (!normalized || seen.has(key)) return [];
-      seen.add(key);
-      return [normalized];
     });
   }
 

@@ -9,14 +9,9 @@ import {
   AiRunModel,
   UserModel,
 } from '../../models';
-import {
-  AiConversation,
-  AiConversationMessage,
-  AiProfile,
-  ChatMsg,
-  UserProfile,
-} from '../../types';
+import { AiConversationMessage, AiProfile, ChatMsg } from '../../types';
 import { AiGraphService } from './ai-graph.service';
+import { toAgentProfile } from './ai-utils';
 
 type AgentRequest = {
   userId: string;
@@ -45,29 +40,48 @@ export class AiAgentService {
     const conversation = await this.conversations.getOrCreateActive(
       request.userId
     );
+    const conversationId = this.requireObjectId(
+      conversation._id,
+      'AI conversation'
+    );
     const leaseOwner = randomUUID();
-    await this.acquireLease(conversation, leaseOwner);
+    await this.acquireLease(conversationId, leaseOwner);
+    const leaseHeartbeat = setInterval(() => {
+      void this.conversations
+        .tryAcquireLease(conversationId, leaseOwner, 120_000)
+        .catch(error => console.error('Unable to renew AI lease', error));
+    }, 30_000);
+    leaseHeartbeat.unref();
 
     let runId: string | undefined;
     try {
       const existing = request.clientRequestId
         ? await this.messages.findUserRequest(
-            conversation._id!,
+            conversationId,
             request.clientRequestId
           )
         : null;
       if (existing) {
         const answer = await this.messages.findAssistantForTurn(
-          conversation._id!,
+          conversationId,
           existing.turnId
         );
-        if (answer) return this.toChatMessage(answer);
+        if (answer) {
+          const previousRun = await this.runs.getByTurn(
+            conversationId,
+            existing.turnId
+          );
+          if (previousRun && answer._id) {
+            await this.runs.complete(previousRun.runId, answer._id);
+          }
+          return this.toChatMessage(answer);
+        }
       }
 
       const input =
         existing ??
         (await this.messages.create({
-          conversationId: conversation._id!,
+          conversationId,
           userId: new ObjectId(request.userId),
           threadId: conversation.threadId,
           turnId: randomUUID(),
@@ -84,17 +98,18 @@ export class AiAgentService {
             : undefined,
         }));
 
-      let run = await this.runs.getByTurn(conversation._id!, input.turnId);
+      const inputId = this.requireObjectId(input._id, 'AI input message');
+      let run = await this.runs.getByTurn(conversationId, input.turnId);
       if (!run) {
         runId = randomUUID();
         run = await this.runs.create({
           runId,
           turnId: input.turnId,
-          conversationId: conversation._id!,
+          conversationId,
           userId: new ObjectId(request.userId),
           threadId: conversation.threadId,
           status: 'running',
-          inputMessageId: input._id!,
+          inputMessageId: inputId,
         });
       } else {
         runId = run.runId;
@@ -108,18 +123,18 @@ export class AiAgentService {
       const result = await this.requireGraph().invoke(
         {
           message: new HumanMessage({
-            id: input._id!.toHexString(),
+            id: inputId.toHexString(),
             content: input.content,
           }),
           runId,
           userId: request.userId,
-          profile: this.toAgentProfile(user),
+          profile: toAgentProfile(user),
         },
         conversation.threadId
       );
       const content = this.lastAssistantText(result.messages);
       const output = await this.messages.create({
-        conversationId: conversation._id!,
+        conversationId,
         userId: new ObjectId(request.userId),
         threadId: conversation.threadId,
         turnId: input.turnId,
@@ -128,21 +143,27 @@ export class AiAgentService {
         content,
         clientRequestId: request.clientRequestId,
       });
-      await this.runs.complete(runId, output._id!);
+      await this.runs.complete(
+        runId,
+        this.requireObjectId(output._id, 'AI output message')
+      );
       return this.toChatMessage(output);
     } catch (error) {
       if (runId) await this.runs.fail(runId, this.errorMessage(error));
       throw error;
     } finally {
+      clearInterval(leaseHeartbeat);
       if (runId) this.graph?.clearImage(runId);
-      await this.conversations.releaseLease(conversation._id!, leaseOwner);
+      await this.conversations.releaseLease(conversationId, leaseOwner);
     }
   }
 
   async getMessages(userId: string): Promise<ChatMsg[]> {
     await this.initialize();
     const conversation = await this.conversations.getOrCreateActive(userId);
-    const messages = await this.messages.list(conversation._id!);
+    const messages = await this.messages.list(
+      this.requireObjectId(conversation._id, 'AI conversation')
+    );
     return messages.map(message => this.toChatMessage(message));
   }
 
@@ -163,13 +184,17 @@ export class AiAgentService {
   ) {
     await this.initialize();
     const conversation = await this.conversations.getOrCreateActive(userId);
+    const conversationId = this.requireObjectId(
+      conversation._id,
+      'AI conversation'
+    );
     if (kind === 'welcome') {
-      const existing = await this.messages.findWelcome(conversation._id!);
+      const existing = await this.messages.findWelcome(conversationId);
       if (existing) return this.toChatMessage(existing);
     }
     const turnId = randomUUID();
     const message = await this.messages.create({
-      conversationId: conversation._id!,
+      conversationId,
       userId: new ObjectId(userId),
       threadId: conversation.threadId,
       turnId,
@@ -179,7 +204,12 @@ export class AiAgentService {
       metadata,
     });
     await this.requireGraph().updateState(conversation.threadId, {
-      messages: [new AIMessage({ id: message._id!.toHexString(), content })],
+      messages: [
+        new AIMessage({
+          id: this.requireObjectId(message._id, 'AI message').toHexString(),
+          content,
+        }),
+      ],
     });
     return this.toChatMessage(message);
   }
@@ -191,8 +221,12 @@ export class AiAgentService {
   ) {
     await this.initialize();
     const conversation = await this.conversations.getOrCreateActive(userId);
+    const conversationId = this.requireObjectId(
+      conversation._id,
+      'AI conversation'
+    );
     const message = await this.messages.create({
-      conversationId: conversation._id!,
+      conversationId,
       userId: new ObjectId(userId),
       threadId: conversation.threadId,
       turnId: randomUUID(),
@@ -202,7 +236,12 @@ export class AiAgentService {
       metadata,
     });
     await this.requireGraph().updateState(conversation.threadId, {
-      messages: [new HumanMessage({ id: message._id!.toHexString(), content })],
+      messages: [
+        new HumanMessage({
+          id: this.requireObjectId(message._id, 'AI message').toHexString(),
+          content,
+        }),
+      ],
     });
   }
 
@@ -237,18 +276,14 @@ export class AiAgentService {
   }
 
   private async acquireLease(
-    conversation: AiConversation,
+    conversationId: ObjectId,
     owner: string,
     timeoutMs = 10_000
   ) {
     const startedAt = Date.now();
     while (Date.now() - startedAt < timeoutMs) {
       if (
-        await this.conversations.tryAcquireLease(
-          conversation._id!,
-          owner,
-          120_000
-        )
+        await this.conversations.tryAcquireLease(conversationId, owner, 120_000)
       ) {
         return;
       }
@@ -271,6 +306,11 @@ export class AiAgentService {
     return this.graph;
   }
 
+  private requireObjectId(id: ObjectId | undefined, entity: string) {
+    if (!id) throw new Error(`${entity} was not persisted`);
+    return id;
+  }
+
   private lastAssistantText(messages: unknown[]) {
     for (const message of [...messages].reverse()) {
       if (AIMessage.isInstance(message)) {
@@ -287,29 +327,16 @@ export class AiAgentService {
     throw new Error('The AI graph did not return an assistant response');
   }
 
-  private toAgentProfile(user: UserProfile): Record<string, unknown> {
-    const {
-      _id,
-      email,
-      password,
-      providers,
-      appleSub,
-      appleEmailPrivateRelay,
-      appAccountToken,
-      entitlement,
-      createdAt,
-      updatedAt,
-      ...profile
-    } = user;
-    return profile;
-  }
-
   private toChatMessage(message: AiConversationMessage): ChatMsg {
     return {
       userId: message.userId,
       sender: message.role === 'assistant' ? 'ai' : 'user',
       content: message.content,
       timestamp: message.createdAt,
+      messageId: message._id?.toHexString(),
+      turnId: message.turnId,
+      kind: message.kind,
+      metadata: message.metadata,
     };
   }
 

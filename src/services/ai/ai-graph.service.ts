@@ -6,7 +6,6 @@ import {
   RemoveMessage,
   SystemMessage,
 } from '@langchain/core/messages';
-import { RunnableConfig } from '@langchain/core/runnables';
 import {
   END,
   MessagesValue,
@@ -17,7 +16,6 @@ import {
 import { MongoDBSaver } from '@langchain/langgraph-checkpoint-mongodb';
 import { ChatOpenAI } from '@langchain/openai';
 import { z } from 'zod';
-import { UserProfile } from '../../types';
 import { AiRunModel } from '../../models/ai-run.model';
 import {
   ADVICE_PROMPT,
@@ -171,10 +169,7 @@ export class AiGraphService {
       .compile({ checkpointer });
   }
 
-  private routeNode = async (
-    state: typeof AgentState.State,
-    _config: RunnableConfig
-  ) => {
+  private routeNode = async (state: typeof AgentState.State) => {
     let route: AgentRoute;
     if (this.images.has(state.runId)) {
       route = 'VISION';
