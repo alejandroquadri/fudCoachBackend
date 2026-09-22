@@ -52,6 +52,26 @@ curl http://127.0.0.1:3000/
 The image contains neither `.env` nor the private key. Use `yarn docker:logs`,
 `yarn docker:stop`, and `yarn docker:remove` to manage the local container.
 
+## Deploying on the Droplet
+
+From `/home/ale/apps/fudCoachBackend` on the VPS, after pulling the new code:
+
+```sh
+git pull
+yarn docker:vps:deploy
+```
+
+`docker:vps:deploy` builds `fud-node:prod`, replaces the `fud-node` container,
+and starts it on the existing `fud-net` network using the server's `.env` and
+read-only App Store key. Caddy keeps running and continues routing
+`api.fud.coach` to the replacement container.
+
+To follow the application startup logs:
+
+```sh
+yarn docker:vps:logs
+```
+
 ## AI architecture
 
 The implementation follows the existing application layers:

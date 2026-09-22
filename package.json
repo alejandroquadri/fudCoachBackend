@@ -16,7 +16,11 @@
     "docker:stop": "docker stop fud-coach-backend",
     "docker:remove": "docker rm -f fud-coach-backend",
     "docker:logs": "docker logs -f fud-coach-backend",
-    "docker:isrunning": "docker ps --filter name=fud-coach-backend --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
+    "docker:isrunning": "docker ps --filter name=fud-coach-backend --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'",
+    "docker:vps:build": "docker build --pull -t fud-node:prod .",
+    "docker:vps:restart": "docker rm -f fud-node 2>/dev/null || true; docker run -d --name fud-node --network fud-net --restart unless-stopped --env-file .env --mount type=bind,source=\"$PWD/secrets/appstore_private_key.p8\",target=/app/secrets/appstore_private_key.p8,readonly fud-node:prod",
+    "docker:vps:deploy": "yarn docker:vps:build && yarn docker:vps:restart",
+    "docker:vps:logs": "docker logs -f fud-node"
   },
   "author": "Alejandro Quadri",
   "license": "ISC",
