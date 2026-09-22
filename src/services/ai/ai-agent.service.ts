@@ -24,7 +24,7 @@ export class AiAgentService {
   private readonly conversations = new AiConversationModel();
   private readonly messages = new AiMessageModel();
   private readonly runs = new AiRunModel();
-  private readonly users = new UserModel();
+  private users?: UserModel;
   private checkpointer?: MongoDBSaver;
   private graph?: AiGraphService;
   private initialization?: Promise<void>;
@@ -258,6 +258,7 @@ export class AiAgentService {
   }
 
   private async initializeOnce() {
+    this.users = new UserModel();
     this.checkpointer = new MongoDBSaver({
       client: mongoInstance.client,
       dbName: mongoInstance.db.databaseName,
@@ -296,7 +297,7 @@ export class AiAgentService {
 
   private async requireUser(userId: string) {
     if (!ObjectId.isValid(userId)) throw new Error('Invalid user ID');
-    const user = await this.users.getUserById(userId);
+    const user = await this.requireUsers().getUserById(userId);
     if (!user) throw new Error('No se encontró usuario');
     return user;
   }
@@ -304,6 +305,11 @@ export class AiAgentService {
   private requireGraph() {
     if (!this.graph) throw new Error('AI service has not been initialized');
     return this.graph;
+  }
+
+  private requireUsers() {
+    if (!this.users) throw new Error('AI service has not been initialized');
+    return this.users;
   }
 
   private requireObjectId(id: ObjectId | undefined, entity: string) {
