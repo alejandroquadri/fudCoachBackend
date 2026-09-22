@@ -1,6 +1,6 @@
 // src/services/jose.service.ts
 // ESM-safe loader for 'jose' with JWKS caching for Apple Sign In.
-// Works under CommonJS/ts-node because we force a real dynamic import via eval().
+// Works in the compiled CommonJS output because we force a real dynamic import via eval().
 
 export class JoseService {
   // Cache the loaded module across calls (type intentionally 'any' to avoid TS emitting helpers)

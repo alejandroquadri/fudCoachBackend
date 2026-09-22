@@ -19,11 +19,9 @@ export class AppStoreService {
   private appAppleId = Number(process.env.APP_APPLE_ID);
 
   private certsDir = path.join(process.cwd(), 'certs');
-  private privateKeyFile = path.join(
-    process.cwd(),
-    'secrets',
-    'appstore_private_key.p8'
-  );
+  private privateKeyFile =
+    process.env.APPSTORE_PRIVATE_KEY_PATH ||
+    path.join(process.cwd(), 'secrets', 'appstore_private_key.p8');
 
   private prodClient!: AppStoreServerAPIClient;
   private sandboxClient!: AppStoreServerAPIClient;

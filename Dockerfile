@@ -1,36 +1,27 @@
+ARG NODE_VERSION=24.18.0
 
-# ---- Build stage: compile TypeScript to dist/ ----
-FROM node:23.1-alpine AS build
+FROM node:${NODE_VERSION}-bookworm-slim AS build
 WORKDIR /app
 
-# Install deps first (better layer caching)
-COPY package.json yarn.lock ./
-RUN yarn install
-
-# Copy source and compile
-COPY tsconfig.json ./
+COPY package.json yarn.lock tsconfig.json ./
+RUN yarn install --frozen-lockfile --non-interactive
 COPY src ./src
-COPY public ./public           
-RUN yarn build   # runs: tsc --project tsconfig.json
+RUN yarn build \
+  && yarn cache clean
 
-# ---- Runtime stage: run compiled JS ----
-FROM node:23.1-alpine
+FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Only production deps
 COPY package.json yarn.lock ./
-RUN yarn install --production
+RUN yarn install --frozen-lockfile --production=true --non-interactive \
+  && yarn cache clean
 
-# Bring compiled code
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/public ./public
-
-# ✅  bring the certs into the runtime image
-COPY certs ./certs  
-COPY secrets/appstore_private_key.p8 ./secrets/appstore_private_key.p8
+COPY public ./public
+COPY certs ./certs
 
 ENV PORT=3000
+USER node
 EXPOSE 3000
-CMD ["node","dist/index.js"]
-
+CMD ["node", "dist/index.js"]

@@ -4,17 +4,19 @@ Node, Express, TypeScript, MongoDB, LangChain, and LangGraph backend for Fud Coa
 The nutrition coach runs in this process; the former Python AI service is no
 longer required.
 
-## Runtime
+## Local development
 
-The repository is configured for Node `23.1.0` in `.nvmrc` and Docker.
+The repository is configured for Node `24.18.0` in `.nvmrc` and Docker.
 
 ```sh
 nvm use
-yarn install
+yarn install --frozen-lockfile
 yarn build
 yarn test
-yarn start
+yarn dev
 ```
+
+`yarn start` runs the compiled production entry point at `dist/index.js`.
 
 ## Configuration
 
@@ -27,6 +29,28 @@ requires both provider keys at startup:
 
 The model IDs can be changed with `AI_TEXT_MODEL` and `AI_VISION_MODEL` without
 changing the graph.
+
+For local development, the App Store private key defaults to
+`secrets/appstore_private_key.p8`. Set `APPSTORE_PRIVATE_KEY_PATH` only when the
+key is stored elsewhere.
+
+## Docker
+
+Build the same `linux/amd64` image that will run on the DigitalOcean Droplet:
+
+```sh
+yarn docker:build
+```
+
+Run it locally with configuration and the App Store key mounted at runtime:
+
+```sh
+yarn docker:run
+curl http://127.0.0.1:3000/
+```
+
+The image contains neither `.env` nor the private key. Use `yarn docker:logs`,
+`yarn docker:stop`, and `yarn docker:remove` to manage the local container.
 
 ## AI architecture
 
