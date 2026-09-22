@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "vps": "ssh fud-vps",
     "start": "node dist/index.js",
     "build": "tsc --project tsconfig.json",
     "test": "node --import tsx --test tests/*.test.ts",

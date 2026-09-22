@@ -66,6 +66,8 @@ and starts it on the existing `fud-net` network using the server's `.env` and
 read-only App Store key. Caddy keeps running and continues routing
 `api.fud.coach` to the replacement container.
 
+The VPS and the backend image both use Node 24.18.0.
+
 To follow the application startup logs:
 
 ```sh
