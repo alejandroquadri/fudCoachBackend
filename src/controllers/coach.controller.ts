@@ -1,6 +1,7 @@
 import { AiProfile, ChatMsg } from '../types';
 import { aiAgentService } from '../services';
 import sharp from 'sharp';
+import { ContextBudgetError } from '../services/ai/ai-context';
 
 export class CoachController {
   async initUserPreferences(userId: string, preferences: AiProfile) {
@@ -30,6 +31,10 @@ Ready to get started? 💪`;
   getMessages = (userId: string) => {
     return aiAgentService.getMessages(userId);
   };
+  getMessagePage = (
+    userId: string,
+    options: { limit?: number; before?: string }
+  ) => aiAgentService.getMessagePage(userId, options);
 
   async coachResponse(
     message: string,
@@ -43,6 +48,7 @@ Ready to get started? 💪`;
         clientRequestId,
       });
     } catch (error) {
+      if (error instanceof ContextBudgetError) throw error;
       throw new Error(`Error obteniendo respuesta de ai ${error}`);
     }
   }
@@ -50,13 +56,25 @@ Ready to get started? 💪`;
   async parseImage(
     file: Express.Multer.File,
     userId: string,
-    clientRequestId?: string
+    clientRequestId?: string,
+    caption?: string
   ): Promise<ChatMsg> {
     try {
-      const processed = await sharp(file.buffer).rotate().jpeg().toBuffer();
+      const processed = await sharp(file.buffer, {
+        limitInputPixels: 40_000_000,
+      })
+        .rotate()
+        .resize({
+          width: 1600,
+          height: 1600,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: 85 })
+        .toBuffer();
       return await aiAgentService.respond({
         userId,
-        message: '[User uploaded an image]',
+        message: caption?.trim() || '[User uploaded an image]',
         clientRequestId,
         image: {
           buffer: processed,
@@ -65,6 +83,7 @@ Ready to get started? 💪`;
         },
       });
     } catch (error) {
+      if (error instanceof ContextBudgetError) throw error;
       console.log('Error parsing Image', error);
       throw new Error('Error parsing Image');
     }

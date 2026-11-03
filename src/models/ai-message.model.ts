@@ -1,6 +1,11 @@
 import { Collection, ObjectId } from 'mongodb';
 import { mongoInstance } from '../connection';
 import { AiConversationMessage } from '../types';
+import {
+  decodeCursor,
+  encodeCursor,
+  PageRequestSchema,
+} from '../services/ai/chat-pagination';
 
 export class AiMessageModel {
   private get collection(): Collection<AiConversationMessage> {
@@ -61,11 +66,45 @@ export class AiMessageModel {
     });
   }
 
-  list(conversationId: ObjectId, limit = 0) {
+  list(conversationId: ObjectId, limit = 40) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+      throw new Error('Invalid message limit');
     const cursor = this.collection
       .find({ conversationId })
       .sort({ createdAt: -1, _id: -1 });
-    if (limit > 0) cursor.limit(limit);
+    cursor.limit(limit);
     return cursor.toArray();
+  }
+
+  async page(
+    conversationId: ObjectId,
+    options: { limit?: number; before?: string } = {}
+  ) {
+    const { limit, before } = PageRequestSchema.parse(options);
+    const cursor = before ? decodeCursor(before) : undefined;
+    const documents = await this.collection
+      .find({
+        conversationId,
+        ...(cursor
+          ? {
+              $or: [
+                { createdAt: { $lt: cursor.date } },
+                { createdAt: cursor.date, _id: { $lt: cursor.id } },
+              ],
+            }
+          : {}),
+      })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
+      .toArray();
+    const messages = documents.slice(0, limit);
+    const last = messages.at(-1);
+    return {
+      messages,
+      nextCursor:
+        documents.length > limit && last?._id
+          ? encodeCursor(last._id, last.createdAt)
+          : null,
+    };
   }
 }

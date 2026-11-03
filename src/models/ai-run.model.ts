@@ -1,8 +1,18 @@
 import { Collection, ObjectId } from 'mongodb';
 import { mongoInstance } from '../connection';
-import { AiRun, AiRunOperation } from '../types';
+import { AiRun, AiRunOperation, AiModelCall } from '../types';
 
 export class AiRunModel {
+  async recordModelCall(runId: string, call: AiModelCall) {
+    await this.collection.updateOne(
+      { runId },
+      {
+        $push: { modelCalls: { $each: [call], $slice: -100 } },
+        $set: { updatedAt: new Date() },
+      }
+    );
+  }
+
   private get collection(): Collection<AiRun> {
     return mongoInstance.db.collection<AiRun>('aiRuns');
   }

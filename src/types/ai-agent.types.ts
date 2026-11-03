@@ -54,10 +54,33 @@ export interface AiRun {
   outputMessageId?: ObjectId;
   route?: string;
   operations?: AiRunOperation[];
+  modelCalls?: AiModelCall[];
   error?: string;
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
+}
+
+export interface AiModelCall {
+  task: string;
+  policyVersion: string;
+  provider: 'anthropic' | 'openai';
+  requestedModel: string;
+  actualModel: string;
+  attempt: number;
+  durationMs: number;
+  status: 'completed' | 'failed';
+  errorCode?: string;
+  inputTokens?: number;
+  inputBudgetUnits?: number;
+  estimatedInputUnits?: number;
+  droppedContextMessages?: number;
+  outputTokens?: number;
+  cacheReadTokens?: number;
+  reasoningTokens?: number;
+  estimatedCostUsd?: number;
+  requestId?: string;
+  createdAt: Date;
 }
 
 export interface AiMessageInput {

@@ -12,6 +12,9 @@ import {
 import { AiConversationMessage, AiProfile, ChatMsg } from '../../types';
 import { AiGraphService } from './ai-graph.service';
 import { toAgentProfile } from './ai-utils';
+import { CoachMemoryModel } from '../../models/coach-memory.model';
+import { CheckpointRetentionModel } from '../../models/checkpoint-retention.model';
+import { bytes, MAX_USER_MESSAGE_BYTES } from './ai-context';
 
 type AgentRequest = {
   userId: string;
@@ -24,6 +27,8 @@ export class AiAgentService {
   private readonly conversations = new AiConversationModel();
   private readonly messages = new AiMessageModel();
   private readonly runs = new AiRunModel();
+  private readonly memory = new CoachMemoryModel();
+  private readonly retention = new CheckpointRetentionModel();
   private users?: UserModel;
   private checkpointer?: MongoDBSaver;
   private graph?: AiGraphService;
@@ -35,6 +40,10 @@ export class AiAgentService {
   }
 
   async respond(request: AgentRequest): Promise<ChatMsg> {
+    if (bytes(request.message) > MAX_USER_MESSAGE_BYTES)
+      throw new Error(
+        'Message too long. Please split it into shorter messages.'
+      );
     await this.initialize();
     const user = await this.requireUser(request.userId);
     const conversation = await this.conversations.getOrCreateActive(
@@ -87,7 +96,7 @@ export class AiAgentService {
           turnId: randomUUID(),
           role: 'user',
           kind: request.image ? 'image' : 'text',
-          content: request.image ? '[User uploaded an image]' : request.message,
+          content: request.message || '[User uploaded an image]',
           clientRequestId: request.clientRequestId,
           metadata: request.image
             ? {
@@ -120,6 +129,28 @@ export class AiAgentService {
         this.requireGraph().setImage(runId, request.image);
       }
 
+      const memory = await this.memory.get(request.userId);
+      const recent = await this.messages.list(conversationId, 17);
+      const recentMessages = recent
+        .reverse()
+        .filter(
+          message =>
+            message._id?.toHexString() !== inputId.toHexString() &&
+            (!memory.contextResetAt ||
+              message.createdAt.getTime() > Date.parse(memory.contextResetAt))
+        )
+        .map(message =>
+          message.role === 'assistant'
+            ? new AIMessage({
+                id: message._id!.toHexString(),
+                content: message.content,
+              })
+            : new HumanMessage({
+                id: message._id!.toHexString(),
+                content: message.content,
+              })
+        );
+
       const result = await this.requireGraph().invoke(
         {
           message: new HumanMessage({
@@ -129,6 +160,11 @@ export class AiAgentService {
           runId,
           userId: request.userId,
           profile: toAgentProfile(user),
+          memory,
+          recentMessages,
+          observeMemory:
+            !memory.contextResetAt ||
+            input.createdAt.getTime() > Date.parse(memory.contextResetAt),
         },
         conversation.threadId
       );
@@ -154,6 +190,9 @@ export class AiAgentService {
     } finally {
       clearInterval(leaseHeartbeat);
       if (runId) this.graph?.clearImage(runId);
+      await this.retention
+        .schedule(conversation.threadId)
+        .catch(() => console.warn('Checkpoint retention deferred'));
       await this.conversations.releaseLease(conversationId, leaseOwner);
     }
   }
@@ -165,6 +204,22 @@ export class AiAgentService {
       this.requireObjectId(conversation._id, 'AI conversation')
     );
     return messages.map(message => this.toChatMessage(message));
+  }
+
+  async getMessagePage(
+    userId: string,
+    options: { limit?: number; before?: string }
+  ) {
+    await this.initialize();
+    const conversation = await this.conversations.getOrCreateActive(userId);
+    const page = await this.messages.page(
+      this.requireObjectId(conversation._id, 'AI conversation'),
+      options
+    );
+    return {
+      messages: page.messages.map(message => this.toChatMessage(message)),
+      nextCursor: page.nextCursor,
+    };
   }
 
   async initializePreferences(userId: string, profile: AiProfile) {
@@ -211,6 +266,9 @@ export class AiAgentService {
         }),
       ],
     });
+    await this.retention
+      .schedule(conversation.threadId)
+      .catch(() => console.warn('Checkpoint retention deferred'));
     return this.toChatMessage(message);
   }
 
@@ -243,6 +301,9 @@ export class AiAgentService {
         }),
       ],
     });
+    await this.retention
+      .schedule(conversation.threadId)
+      .catch(() => console.warn('Checkpoint retention deferred'));
   }
 
   async getState(userId: string) {
@@ -272,6 +333,7 @@ export class AiAgentService {
       this.conversations.ensureIndexes(),
       this.messages.ensureIndexes(),
       this.runs.ensureIndexes(),
+      this.retention.ensureIndexes(),
     ]);
     this.graph = new AiGraphService(this.checkpointer);
   }

@@ -5,3 +5,4 @@ export * from './weight.types';
 export * from './notification.types';
 export * from './iap.types';
 export * from './ai-agent.types';
+export * from './nutrition.types';

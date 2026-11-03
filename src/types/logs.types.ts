@@ -1,10 +1,12 @@
 import { ObjectId } from 'mongodb';
+import { NutritionProvenance } from './nutrition.types';
 
 export interface FoodLog {
   _id?: ObjectId;
   user_id: string | ObjectId;
   createdAt?: Date; // timestamp when log was created
   updatedAt?: Date; // timestamp when log was updated
+  nutrition?: NutritionProvenance;
   foodObj: {
     foodName: string;
     servings: number;
@@ -46,6 +48,7 @@ export interface AiFoodLogPayload {
   protein: number;
   carbs: number;
   fat: number;
+  nutrition?: NutritionProvenance;
 }
 
 export interface AiExerciseLogPayload {

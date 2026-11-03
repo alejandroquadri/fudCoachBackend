@@ -30,6 +30,7 @@ export class AiActionsService {
           proteins: meal.protein,
           fats: meal.fat,
         },
+        ...(meal.nutrition ? { nutrition: meal.nutrition } : {}),
         createdAt: now,
         updatedAt: now,
       }));
@@ -38,7 +39,7 @@ export class AiActionsService {
           .collection('foodLogs')
           .insertMany(documents, { session });
       }
-      return { count: documents.length };
+      return { count: documents.length, meals };
     });
   }
 

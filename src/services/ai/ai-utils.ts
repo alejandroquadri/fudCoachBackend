@@ -41,6 +41,7 @@ export const toAgentProfile = (user: UserProfile): Record<string, unknown> => {
     'entitlement',
     'createdAt',
     'updatedAt',
+    'coachMemory',
   ];
   for (const field of privateFields) delete profile[field];
   return profile;

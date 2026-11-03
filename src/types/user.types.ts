@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { Entitlement } from './iap.types';
+import type { CoachMemory } from '../services/ai/coach-memory';
 
 export interface UserProfile {
   _id?: ObjectId | string;
@@ -38,6 +39,7 @@ export interface UserProfile {
   meal_times?: Array<string>;
 
   deliveredWelcome?: boolean; // optional flag to track if welcome message was sent
+  coachMemory?: CoachMemory;
 }
 
 export type PublicUserProfile = Omit<UserProfile, 'password'>;
