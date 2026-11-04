@@ -40,6 +40,17 @@ const item = {
   serving_size: 'medium',
 };
 
+test('confirmed barcode meal bypasses AI matching and is not logged twice on recovery', async () => {
+  const h = harness();
+  h.graph.setBarcodeMeal('barcode-run', meal);
+  await h.invoke('barcode-run', 'Log scanned food');
+  assert.equal(h.writes(), 1);
+  assert.equal(h.modelTasks.includes('router'), false);
+  assert.equal(h.modelTasks.includes('meal'), false);
+  await h.invoke('barcode-run', 'Log scanned food');
+  assert.equal(h.writes(), 1);
+});
+
 function harness(checkpointer = new MemorySaver()) {
   const operations: AiRunOperation[] = [];
   const modelTasks: string[] = [];
@@ -87,7 +98,7 @@ function harness(checkpointer = new MemorySaver()) {
     },
   } as unknown as Pick<AiModelService, 'context' | 'structured' | 'text'>;
   const runs = {
-    get: async () => ({ operations } as AiRun),
+    get: async () => ({ operations }) as AiRun,
     setRoute: async () => {},
     recordModelCall: async () => {},
   } as Pick<AiRunModel, 'get' | 'setRoute' | 'recordModelCall'>;

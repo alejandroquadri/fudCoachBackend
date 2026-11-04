@@ -25,17 +25,24 @@ export interface UsdaFood extends UsdaFoodCandidate {
   retrievedAt: string;
 }
 
-export interface NutritionProvenance {
-  source: 'usda';
-  fdcId: number;
+interface NutritionBase {
   description: string;
-  dataType: string;
   grams: number;
   quantitySource: 'user' | 'usda_portion' | 'ai_estimate';
-  portionId?: string;
   originalAmount: number | null;
   originalUnit: string;
   per100g: NutritionValues;
   retrievedAt: string;
   assumptions: string[];
 }
+
+export type NutritionProvenance = NutritionBase &
+  (
+    | {
+        source: 'usda';
+        fdcId: number;
+        dataType: string;
+        portionId?: string;
+      }
+    | { source: 'open_food_facts'; barcode: string; brand: string }
+  );

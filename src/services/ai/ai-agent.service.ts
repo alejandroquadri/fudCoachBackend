@@ -21,6 +21,7 @@ type AgentRequest = {
   message: string;
   clientRequestId?: string;
   image?: { buffer: Buffer; mimeType: string; filename?: string };
+  barcodeMeal?: import('../../types').AiFoodLogPayload;
 };
 
 export class AiAgentService {
@@ -98,13 +99,15 @@ export class AiAgentService {
           kind: request.image ? 'image' : 'text',
           content: request.message || '[User uploaded an image]',
           clientRequestId: request.clientRequestId,
-          metadata: request.image
-            ? {
-                mimeType: request.image.mimeType,
-                filename: request.image.filename,
-                byteLength: request.image.buffer.length,
-              }
-            : undefined,
+          metadata: request.barcodeMeal
+            ? { barcodeMeal: request.barcodeMeal }
+            : request.image
+              ? {
+                  mimeType: request.image.mimeType,
+                  filename: request.image.filename,
+                  byteLength: request.image.buffer.length,
+                }
+              : undefined,
         }));
 
       const inputId = this.requireObjectId(input._id, 'AI input message');
@@ -128,6 +131,10 @@ export class AiAgentService {
       if (request.image) {
         this.requireGraph().setImage(runId, request.image);
       }
+      const barcodeMeal =
+        (existing?.metadata?.barcodeMeal as
+          AgentRequest['barcodeMeal'] | undefined) ?? request.barcodeMeal;
+      if (barcodeMeal) this.requireGraph().setBarcodeMeal(runId, barcodeMeal);
 
       const memory = await this.memory.get(request.userId);
       const recent = await this.messages.list(conversationId, 17);

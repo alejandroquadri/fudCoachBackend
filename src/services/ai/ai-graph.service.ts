@@ -83,6 +83,7 @@ export class AiGraphService {
   private readonly runs;
   private readonly memory;
   private readonly images = new Map<string, ImageInput>();
+  private readonly barcodeMeals = new Map<string, AiFoodLogPayload>();
   private readonly contexts = new Map<string, AiCallContext>();
   private readonly graph;
 
@@ -108,6 +109,10 @@ export class AiGraphService {
   }
   clearImage(runId: string) {
     this.images.delete(runId);
+    this.barcodeMeals.delete(runId);
+  }
+  setBarcodeMeal(runId: string, meal: AiFoodLogPayload) {
+    this.barcodeMeals.set(runId, meal);
   }
 
   async invoke(
@@ -143,7 +148,7 @@ export class AiGraphService {
     const oldMemory = previous.values.memory as CoachMemory | undefined;
     const reset = Boolean(
       input.memory?.contextResetAt &&
-        input.memory.contextResetAt !== oldMemory?.contextResetAt
+      input.memory.contextResetAt !== oldMemory?.contextResetAt
     );
     const hydrate =
       reset || !(previous.values.messages as unknown[] | undefined)?.length;
@@ -157,18 +162,18 @@ export class AiGraphService {
                 input.message,
               ]
             : retryIndex >= 0
-            ? [
-                new RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
-                ...boundedHistory,
-                input.message,
-              ]
-            : clippedHistory || pruned
-            ? [
-                new RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
-                ...boundedHistory,
-                input.message,
-              ]
-            : [input.message],
+              ? [
+                  new RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
+                  ...boundedHistory,
+                  input.message,
+                ]
+              : clippedHistory || pruned
+                ? [
+                    new RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
+                    ...boundedHistory,
+                    input.message,
+                  ]
+                : [input.message],
           runId: input.runId,
           userId: input.userId,
           profile,
@@ -313,7 +318,8 @@ export class AiGraphService {
     )
       return { route: 'RECOVER', extractedMeals: [] };
     let route: string;
-    if (this.images.has(state.runId)) route = 'VISION';
+    if (this.barcodeMeals.has(state.runId)) route = 'LOG_MEAL';
+    else if (this.images.has(state.runId)) route = 'VISION';
     else {
       const pendingContext = state.pendingMeal
         ? `\nA meal is awaiting clarification: ${JSON.stringify(
@@ -405,6 +411,9 @@ export class AiGraphService {
   };
 
   private mealExtractNode = async (state: State) => {
+    const barcodeMeal = this.barcodeMeals.get(state.runId);
+    if (barcodeMeal)
+      return { extractedMeals: [barcodeMeal], pendingMeal: null };
     const pending = state.pendingMeal
       ? `\nPending meal observations and question:\n${JSON.stringify(
           state.pendingMeal
