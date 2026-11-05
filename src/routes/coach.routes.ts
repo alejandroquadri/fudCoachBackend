@@ -107,7 +107,9 @@ export class CoachRoutes {
       const answer = await aiAgentService.respond({
         userId,
         clientRequestId,
-        message: `Log ${meal.serving_size} of ${meal.name} (barcode ${barcode}).${note.trim() ? ` ${note.trim()}` : ''}`,
+        message: `Log ${meal.serving_size} of ${
+          meal.name
+        } (barcode ${barcode}).${note.trim() ? ` ${note.trim()}` : ''}`,
         barcodeMeal: meal,
       });
       res.json(answer);
@@ -217,7 +219,7 @@ export class CoachRoutes {
     res: Response,
     next: NextFunction
   ) => {
-    const { message, clientRequestId } = req.body;
+    const { message, clientRequestId, timeZone } = req.body;
     try {
       const userId = this.authenticatedUserId(req);
       if (!message) throw new Error('missing message');
@@ -233,7 +235,8 @@ export class CoachRoutes {
       const answer = await this.coachCtrl.coachResponse(
         message,
         userId,
-        typeof clientRequestId === 'string' ? clientRequestId : undefined
+        typeof clientRequestId === 'string' ? clientRequestId : undefined,
+        typeof timeZone === 'string' ? timeZone : undefined
       );
       res.status(200).json(answer);
     } catch (error: unknown) {

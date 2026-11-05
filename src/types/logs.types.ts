@@ -6,6 +6,12 @@ export interface FoodLog {
   user_id: string | ObjectId;
   createdAt?: Date; // timestamp when log was created
   updatedAt?: Date; // timestamp when log was updated
+  // Items from one coach operation share this ID. The local timestamp records
+  // when the entry was made, not necessarily when the food was eaten.
+  mealGroupId?: string;
+  loggedLocalDateTime?: string;
+  loggedTimeZone?: string;
+  loggedTimeZoneSource?: 'notification_settings' | 'device';
   nutrition?: NutritionProvenance;
   foodObj: {
     foodName: string;

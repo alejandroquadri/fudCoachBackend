@@ -40,6 +40,27 @@ test('personal notes preserve untouched sections, allow corrections/removal, and
   assert.equal(getModelPolicies({}).memory.primary.model, 'claude-haiku-5-5');
 });
 
+test('explicit habitual disclosures can save routines but one-time changes cannot', async () => {
+  let stored = emptyMemory();
+  const proposed = { id: 'lunch', meal: 'lunch', weekdays: [1, 2, 3, 4, 5], description: 'chicken and salad' };
+  const service = new CoachMemoryService({
+    structured: async (_task, schema) => schema.parse({ goals: null, relationships: null, preferences: null, context: null, routines: [proposed], forgetRequested: false }),
+  } as Pick<AiModelService, 'structured'>, {
+    get: async () => stored,
+    save: async (_user, notes, revision) => {
+      stored = { ...stored, ...notes, revision: revision + 1 };
+      return stored;
+    },
+  });
+  const context = { runId: 'run', calls: 0, deadline: Date.now() + 10000 };
+  await service.observe('user', stored, {}, [], new HumanMessage('My usual lunch is chicken and salad Monday to Friday.'), context);
+  assert.deepEqual(stored.routines, [proposed]);
+  const revision = stored.revision;
+  await service.observe('user', stored, {}, [], new HumanMessage('My usual lunch without salad today.'), context);
+  assert.equal(stored.revision, revision);
+  assert.deepEqual(stored.routines, [proposed]);
+});
+
 test('manual edits are bounded and cannot set revision metadata or another user ID', () => {
   const edit = {
     goals: '',

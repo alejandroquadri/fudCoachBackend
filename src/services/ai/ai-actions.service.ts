@@ -16,11 +16,61 @@ export type AgentPreferenceChange = {
 };
 
 export class AiActionsService {
-  async logMeals(runId: string, userId: string, meals: AiFoodLogPayload[]) {
+  async logMeals(runId: string, userId: string, meals: AiFoodLogPayload[], timeZone?: string) {
     return this.executeOnce(runId, 'log-meals', async session => {
       const now = new Date();
+      const settings = timeZone ? [] : await mongoInstance.db
+        .collection('notificationSettings')
+        .find(
+          { userId: new ObjectId(userId), timezone: { $type: 'string' } },
+          { session }
+        )
+        .project({ timezone: 1 })
+        .limit(4)
+        .toArray();
+      const zones = timeZone ? [timeZone] : [
+        ...new Set(
+          settings
+            .map(setting => setting.timezone)
+            .filter(zone => typeof zone === 'string' && zone)
+        ),
+      ];
+      let local:
+        | {
+            loggedLocalDateTime: string;
+            loggedTimeZone: string;
+            loggedTimeZoneSource: 'notification_settings' | 'device';
+          }
+        | undefined;
+      if (zones.length === 1) {
+        try {
+          const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: zones[0],
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hourCycle: 'h23',
+          }).formatToParts(now);
+          const part = (key: string) =>
+            parts.find(item => item.type === key)?.value;
+          local = {
+            loggedLocalDateTime: `${part('year')}-${part('month')}-${part(
+              'day'
+            )}T${part('hour')}:${part('minute')}:${part('second')}`,
+            loggedTimeZone: zones[0],
+            loggedTimeZoneSource: timeZone ? 'device' : 'notification_settings',
+          };
+        } catch {
+          // A missing or invalid time zone must not prevent food logging.
+        }
+      }
       const documents = meals.map(meal => ({
         user_id: new ObjectId(userId),
+        mealGroupId: runId,
+        ...(local ?? {}),
         foodObj: {
           foodName: meal.name,
           servings: meal.quantity,

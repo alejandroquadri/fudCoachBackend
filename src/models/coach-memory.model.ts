@@ -22,7 +22,7 @@ export class CoachMemoryModel {
 
   async save(
     userId: string,
-    sections: MemorySections,
+    sections: MemorySections & { routines?: CoachMemory['routines'] },
     revision: number,
     source: 'user' | 'agent'
   ): Promise<CoachMemory | null> {
@@ -44,6 +44,9 @@ export class CoachMemoryModel {
           'coachMemory.relationships': sections.relationships,
           'coachMemory.preferences': sections.preferences,
           'coachMemory.context': sections.context,
+          ...(sections.routines !== undefined
+            ? { 'coachMemory.routines': sections.routines }
+            : {}),
           'coachMemory.revision': revision + 1,
           'coachMemory.updatedAt': now,
           ...(source === 'user' ? { 'coachMemory.contextResetAt': now } : {}),

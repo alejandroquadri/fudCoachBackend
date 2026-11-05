@@ -48,6 +48,40 @@ export class CoachMemoryService {
       ],
       context
     );
+    // Routine changes require an explicit habitual statement or an answer to a
+    // question about a habitual meal. A casual repeat is never an edit.
+    const latestText = typeof latest.content === 'string' ? latest.content : '';
+    const habitual =
+      /\b(usual|usually|regular|regularly|always|every|habitual|habitualmente|normalmente|siempre|cada)\b/i;
+    const declaration =
+      /\b(is|are|was|were|eat|have|has|becomes|make|save|remember|es|son|era|com[oe]|desayuno|almuerzo|ceno|guard[ae]|record[aá]|olvid[aá]|forget|remove|delete|change|cambi[ao])\b/i;
+    const prior = recent
+      .slice(-4)
+      .map(message =>
+        typeof message.content === 'string' ? message.content : ''
+      )
+      .join('\n');
+    const answering =
+      recent.at(-1)?.getType() === 'ai' &&
+      /\?/.test(prior) &&
+      habitual.test(prior);
+    const temporary =
+      /\b(today|tonight|this time|just this once|hoy|esta vez|solo por hoy)\b/i.test(
+        latestText
+      ) &&
+      !/\b(from now on|every day|siempre|a partir de ahora)\b/i.test(
+        latestText
+      );
+    if (
+      update.routines &&
+      (temporary ||
+        !(
+          (habitual.test(latestText) && declaration.test(latestText)) ||
+          answering ||
+          /\b(forget|remove|delete|olvid[aá]|elimin[aá])\b/i.test(latestText)
+        ))
+    )
+      update.routines = null;
     // A calendar year must be grounded in a user statement or an existing note.
     // A current timestamp cannot supply an unknown event year.
     const source = JSON.stringify({
@@ -71,7 +105,13 @@ export class CoachMemoryService {
       )
         update[key] = null;
     }
-    const next = applyMemoryUpdate(current, update);
+    let next = applyMemoryUpdate(current, update);
+    if (
+      update.routines &&
+      JSON.stringify(update.routines) !== JSON.stringify(current.routines ?? [])
+    ) {
+      next = { ...(next ?? current), routines: update.routines };
+    }
     if (!next && !update.forgetRequested) return this.store.get(userId);
     // Never overwrite an edit made while extraction was running. Do not replay it.
     return (

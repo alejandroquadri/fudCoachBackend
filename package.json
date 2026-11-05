@@ -15,6 +15,7 @@
     "ai:eval": "tsx scripts/evaluate-ai.ts",
     "ai:smoke": "tsx scripts/smoke-nutrition.ts",
     "ai:smoke:memory": "tsx scripts/smoke-memory.ts",
+    "ai:smoke:usual-meals": "tsx scripts/smoke-usual-meals.ts",
     "docker:build": "docker buildx build --platform linux/amd64 --pull --load -t fud-coach-backend:local .",
     "docker:run": "docker run -d --name fud-coach-backend --restart unless-stopped --env-file .env --mount type=bind,source=\"$PWD/secrets/appstore_private_key.p8\",target=/app/secrets/appstore_private_key.p8,readonly -p 127.0.0.1:3000:3000 fud-coach-backend:local",
     "docker:stop": "docker stop fud-coach-backend",

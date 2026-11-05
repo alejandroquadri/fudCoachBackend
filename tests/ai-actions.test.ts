@@ -25,7 +25,19 @@ test('meal writes and the recovery payload share a transaction and retries retur
   };
   const db = {
     collection: (name: string) =>
-      name === 'foodLogs'
+      name === 'notificationSettings'
+        ? {
+            find: () => ({
+              project: () => ({
+                limit: () => ({
+                  toArray: async () => [
+                    { timezone: 'America/Argentina/Buenos_Aires' },
+                  ],
+                }),
+              }),
+            }),
+          }
+        : name === 'foodLogs'
         ? {
             insertMany: async (
               documents: unknown[],
@@ -86,6 +98,15 @@ test('meal writes and the recovery payload share a transaction and retries retur
     assert.deepEqual(retry, saved);
     assert.equal(retry.meals[0].calories, 195);
     assert.equal(foods.length, 1);
+    assert.equal((foods[0] as { mealGroupId: string }).mealGroupId, 'run');
+    assert.equal(
+      (foods[0] as { loggedTimeZone: string }).loggedTimeZone,
+      'America/Argentina/Buenos_Aires'
+    );
+    assert.match(
+      (foods[0] as { loggedLocalDateTime: string }).loggedLocalDateTime,
+      /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d$/
+    );
     assert.equal(operations.length, 1);
   } finally {
     delete (mongoInstance as unknown as Record<string, unknown>).db;

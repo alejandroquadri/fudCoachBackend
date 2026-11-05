@@ -17,6 +17,7 @@ import { AiRunModel } from '../src/models/ai-run.model';
 import { AiFoodLogPayload, AiRun, AiRunOperation } from '../src/types';
 import { MealNutritionService } from '../src/services/ai/meal-nutrition.service';
 import { UsdaError } from '../src/services/usda.service';
+import { CoachMemory, emptyMemory } from '../src/services/ai/coach-memory';
 
 const meal: AiFoodLogPayload = {
   name: 'Rice',
@@ -51,9 +52,17 @@ test('confirmed barcode meal bypasses AI matching and is not logged twice on rec
   assert.equal(h.writes(), 1);
 });
 
-function harness(checkpointer = new MemorySaver()) {
+function harness(
+  checkpointer = new MemorySaver(),
+  options?: {
+    memory?: CoachMemory;
+    resolvedMeal?: AiFoodLogPayload;
+    timeZone?: string;
+  }
+) {
   const operations: AiRunOperation[] = [];
   const modelTasks: string[] = [];
+  const mealInputs: string[] = [];
   let question = true;
   let writes = 0;
   let failAfterWrite = false;
@@ -82,11 +91,10 @@ function harness(checkpointer = new MemorySaver()) {
           reason: 'meal',
         });
       if (task === 'meal' || task === 'vision') {
+        if (task === 'meal') mealInputs.push(JSON.stringify(messages));
         const analysis = question
           ? { outcome: 'clarify', items: [item], question: 'How much rice?' }
           : { outcome: 'meal', items: [item], question: null };
-        if (!question && task === 'meal')
-          assert.match(JSON.stringify(messages), /Pending meal/);
         return schema.parse(analysis);
       }
       throw new Error(`Unexpected task: ${task}`);
@@ -98,7 +106,7 @@ function harness(checkpointer = new MemorySaver()) {
     },
   } as unknown as Pick<AiModelService, 'context' | 'structured' | 'text'>;
   const runs = {
-    get: async () => ({ operations }) as AiRun,
+    get: async () => ({ operations } as AiRun),
     setRoute: async () => {},
     recordModelCall: async () => {},
   } as Pick<AiRunModel, 'get' | 'setRoute' | 'recordModelCall'>;
@@ -126,7 +134,7 @@ function harness(checkpointer = new MemorySaver()) {
   const nutrition = {
     resolve: async () => {
       if (lookupFails) throw new UsdaError('unavailable');
-      return { outcome: 'ready', meals: [meal] };
+      return { outcome: 'ready', meals: [options?.resolvedMeal ?? meal] };
     },
   } as Pick<MealNutritionService, 'resolve'>;
   const graph = new AiGraphService(checkpointer, {
@@ -134,6 +142,7 @@ function harness(checkpointer = new MemorySaver()) {
     runs,
     actions,
     nutrition,
+    memory: { observe: async (_userId, memory) => memory },
   });
   const invoke = (runId: string, content: string) =>
     graph.invoke(
@@ -141,6 +150,8 @@ function harness(checkpointer = new MemorySaver()) {
         runId,
         userId: 'user',
         profile: {},
+        timeZone: options?.timeZone,
+        memory: options?.memory,
         message: new HumanMessage({ id: runId, content }),
       },
       'thread'
@@ -149,6 +160,7 @@ function harness(checkpointer = new MemorySaver()) {
     graph,
     invoke,
     modelTasks,
+    mealInputs,
     summaryInputs,
     operations,
     writes: () => writes,
@@ -177,9 +189,85 @@ test('persists a clarification and merges the next answer before saving the meal
   assert.equal(h.writes(), 0);
   h.answer();
   const followup = await h.invoke('two', '150 grams');
+  assert.match(h.mealInputs.at(-1) ?? '', /Pending meal/);
   assert.equal(h.writes(), 1);
   assert.equal(followup.pendingMeal, null);
   assert.match(String(followup.messages.at(-1)?.content), /195 kcal/);
+});
+
+test('weekday routines reach extraction only after local-day selection', async () => {
+  const now = new Date();
+  const weekday = now.getUTCDay() || 7;
+  const memory = {
+    ...emptyMemory(),
+    routines: [
+      {
+        id: 'weekday-lunch',
+        meal: 'lunch' as const,
+        weekdays: [weekday],
+        description: 'roasted chicken and carrots',
+      },
+    ],
+  };
+  const selected = harness(new MemorySaver(), { memory, timeZone: 'UTC' });
+  selected.answer();
+  await selected.invoke('selected-usual', 'my usual lunch');
+  assert.match(selected.mealInputs[0], /weekday-lunch/);
+  assert.equal(selected.writes(), 1);
+  const missingZone = harness(new MemorySaver(), { memory });
+  missingZone.answer();
+  const result = await missingZone.invoke('unknown-zone', 'my usual lunch');
+  assert.equal(missingZone.writes(), 0);
+  assert.match(String(result.messages.at(-1)?.content), /time zone/i);
+});
+
+test('an explicitly named Sunday routine is selected without assuming today is Sunday', async () => {
+  const memory = {
+    ...emptyMemory(),
+    routines: [
+      { id: 'sunday', meal: 'breakfast' as const, weekdays: [7], description: 'two boiled eggs' },
+      { id: 'weekday', meal: 'breakfast' as const, weekdays: [1, 2, 3, 4, 5], description: 'oatmeal' },
+    ],
+  };
+  const h = harness(new MemorySaver(), { memory, timeZone: 'UTC' });
+  h.answer();
+  await h.invoke('sunday-routine', 'my Sunday breakfast');
+  assert.match(h.mealInputs[0], /authoritative structured routine.*two boiled eggs/);
+  assert.equal(h.writes(), 1);
+});
+
+test('meal extraction receives editable notes and recovery repeats the saved estimated portion', async () => {
+  const remembered = {
+    ...emptyMemory(),
+    context: 'Usual lunch: chicken and salad.',
+    routines: [
+      {
+        id: 'lunch',
+        meal: 'lunch' as const,
+        weekdays: [],
+        description: 'chicken and salad',
+      },
+    ],
+  };
+  const resolvedMeal = {
+    ...meal,
+    name: 'Chicken',
+    nutrition: { grams: 120, quantitySource: 'ai_estimate' },
+  } as AiFoodLogPayload;
+  const h = harness(new MemorySaver(), { memory: remembered, resolvedMeal });
+  h.answer();
+  const first = await h.invoke('usual-run', 'my usual lunch');
+  assert.match(h.mealInputs[0], /Usual lunch: chicken and salad/);
+  assert.match(String(first.messages.at(-1)?.content), /Chicken \(~120 g\)/);
+  assert.match(
+    String(first.messages.at(-1)?.content),
+    /Portions are estimated/
+  );
+  const calls = h.modelTasks.length;
+  const retry = await h.invoke('usual-run', 'my usual lunch');
+  assert.equal(h.writes(), 1);
+  assert.equal(h.modelTasks.length, calls);
+  assert.equal(retry.messages.at(-1)?.content, first.messages.at(-1)?.content);
 });
 
 test('two years of backlog cannot grow summary requests or checkpoints during repeated failures', async () => {

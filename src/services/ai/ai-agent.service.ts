@@ -20,6 +20,7 @@ type AgentRequest = {
   userId: string;
   message: string;
   clientRequestId?: string;
+  timeZone?: string;
   image?: { buffer: Buffer; mimeType: string; filename?: string };
   barcodeMeal?: import('../../types').AiFoodLogPayload;
 };
@@ -102,12 +103,12 @@ export class AiAgentService {
           metadata: request.barcodeMeal
             ? { barcodeMeal: request.barcodeMeal }
             : request.image
-              ? {
-                  mimeType: request.image.mimeType,
-                  filename: request.image.filename,
-                  byteLength: request.image.buffer.length,
-                }
-              : undefined,
+            ? {
+                mimeType: request.image.mimeType,
+                filename: request.image.filename,
+                byteLength: request.image.buffer.length,
+              }
+            : undefined,
         }));
 
       const inputId = this.requireObjectId(input._id, 'AI input message');
@@ -133,7 +134,8 @@ export class AiAgentService {
       }
       const barcodeMeal =
         (existing?.metadata?.barcodeMeal as
-          AgentRequest['barcodeMeal'] | undefined) ?? request.barcodeMeal;
+          | AgentRequest['barcodeMeal']
+          | undefined) ?? request.barcodeMeal;
       if (barcodeMeal) this.requireGraph().setBarcodeMeal(runId, barcodeMeal);
 
       const memory = await this.memory.get(request.userId);
@@ -167,6 +169,7 @@ export class AiAgentService {
           runId,
           userId: request.userId,
           profile: toAgentProfile(user),
+          timeZone: request.timeZone,
           memory,
           recentMessages,
           observeMemory:

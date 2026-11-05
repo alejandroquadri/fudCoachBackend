@@ -39,13 +39,15 @@ Ready to get started? 💪`;
   async coachResponse(
     message: string,
     userId: string,
-    clientRequestId?: string
+    clientRequestId?: string,
+    timeZone?: string
   ): Promise<ChatMsg> {
     try {
       return await aiAgentService.respond({
         message,
         userId,
         clientRequestId,
+        timeZone,
       });
     } catch (error) {
       if (error instanceof ContextBudgetError) throw error;

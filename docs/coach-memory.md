@@ -27,6 +27,30 @@ is removed rather than retained as history. Date wording is preserved when the
 year is unknown. A local guard rejects newly generated calendar years that do
 not occur in the user-supplied context or existing notes.
 
+Explicit usual meals are saved as structured routines in coach memory, with a
+meal type, applicable weekdays and a description of the foods, portions and
+preparation. The app's Coach memory screen lets users review, change and remove
+these routines. A user can define a routine without logging a
+meal, then say “my usual lunch” to log it. A day-specific routine stays distinct
+from an everyday one. If the routine or a material detail is unclear, the coach
+asks; a reply can both clarify the current meal and update the routine. A change
+for one occasion does not change the saved routine. The model may misunderstand,
+so users can inspect and correct its notes in Settings > Coach memory.
+
+An explicit reference to a recently confirmed meal can also define a usual
+meal; a request for another one can start a new food log. These references use
+recent conversation, not a query over historical food records. Existing food
+logs do not identify meal type or reliably group independently logged items,
+and conversation messages do not supply reliable local dates to the model.
+The coach must ask if it cannot establish which meal is meant, including for
+references such as yesterday's breakfast. New coach meal logs now carry a shared
+`mealGroupId` and, when available, the local logging time and time zone supplied
+by the device. Notification settings are used as a fallback. This is when the
+entry was created, not necessarily when the food was eaten, and notification
+settings may not reflect travel. Manual logs and older records do not have this
+new metadata. Historical
+lookup and confirmation using these fields are not implemented yet.
+
 `AI_MEMORY_MODEL` can override the default. A memory update has an eight-second
 inference budget within the existing turn deadline/call budget. Failure leaves
 the reply/logging flow usable, with existing notes. Bare image uploads skip this
@@ -147,6 +171,8 @@ yarn test
 # Paid model calls with synthetic data and no database writes:
 yarn ai:eval --models=anthropic:claude-haiku-5-5 --case=memory: --trials=3 --output=/private/tmp/coach-memory-evaluation.json
 yarn ai:smoke:memory --output=/private/tmp/coach-memory-smoke.json
+yarn ai:eval --models=anthropic:claude-haiku-5-5 --case=usual: --trials=3 --output=/private/tmp/coach-usual-meals-evaluation.json
+yarn ai:smoke:usual-meals --output=/private/tmp/coach-usual-meals-smoke.json
 ```
 
 The initial final extraction evaluation passed all nine cases across three

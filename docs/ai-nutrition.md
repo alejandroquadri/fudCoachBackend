@@ -95,6 +95,13 @@ the request. If inference fails before observations are saved, the client must
 resend the image on retry. Multipart image requests optionally accept `message`
 as a caption; existing uploads work without it.
 
+Text meal extraction also receives bounded editable personal notes, so an
+explicitly saved usual meal can be used for a request such as “my Sunday
+breakfast”. Missing or conflicting routines require clarification. The saved
+foods still follow the normal USDA matching and all-or-nothing write flow; the
+confirmation lists the foods and their saved or estimated gram quantities.
+Defining a routine or asking what it is does not itself log a meal.
+
 USDA errors leave the meal unsaved and tell the user to retry. There is no silent
 fallback to invented nutrients. Mixed dishes need a comparable USDA dish or
 clarification of ingredients/preparation. Coverage of local brands and recipes
