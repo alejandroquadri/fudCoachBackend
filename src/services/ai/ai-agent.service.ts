@@ -1,3 +1,4 @@
+import { Language, localizeCoachText } from './language';
 import { randomUUID } from 'crypto';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
 import { MongoDBSaver } from '@langchain/langgraph-checkpoint-mongodb';
@@ -21,6 +22,7 @@ type AgentRequest = {
   message: string;
   clientRequestId?: string;
   timeZone?: string;
+  language?: Language;
   image?: { buffer: Buffer; mimeType: string; filename?: string };
   barcodeMeal?: import('../../types').AiFoodLogPayload;
 };
@@ -170,6 +172,7 @@ export class AiAgentService {
           userId: request.userId,
           profile: toAgentProfile(user),
           timeZone: request.timeZone,
+          language: request.language ?? user.language,
           memory,
           recentMessages,
           observeMemory:
@@ -178,7 +181,7 @@ export class AiAgentService {
         },
         conversation.threadId
       );
-      const content = this.lastAssistantText(result.messages);
+      const content = localizeCoachText(this.lastAssistantText(result.messages), request.language ?? user.language);
       const output = await this.messages.create({
         conversationId,
         userId: new ObjectId(request.userId),

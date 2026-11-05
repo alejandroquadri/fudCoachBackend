@@ -42,3 +42,21 @@ export const DINNER_LOG_MESSAGES = [
     body: 'Log your dinner and see how your goals are shaping up.',
   },
 ];
+
+export const SPANISH_NOTIFICATION_MESSAGES = {
+  dailyPlanner: [
+    { title: 'Planeá tu día ✍️', body: 'Un pequeño plan puede ayudar mucho. ¿Qué pensás comer hoy?' },
+    { title: 'Empezá con energía 💪', body: 'Tomate 30 segundos para pensar en tus comidas de hoy.' },
+    { title: '¡Podés hacerlo! 🙌', body: 'Elegí algo simple para que tu día sea más saludable.' },
+  ],
+  lunchLogReminder: [
+    { title: 'Hora de almorzar 🍽️', body: 'Registrá tu almuerzo en unos pocos pasos.' },
+    { title: '¿Qué almorzaste? 😋', body: 'Registrá tu comida antes de seguir con el día.' },
+    { title: 'Un momento para tu almuerzo ⏱️', body: 'Agregá tu almuerzo mientras lo tenés presente.' },
+  ],
+  dinnerLogReminder: [
+    { title: 'Terminando el día 🌙', body: 'Antes de descansar, registrá tu cena y cómo te fue.' },
+    { title: 'Un momento al final del día ✨', body: 'Una última entrada y tu día estará completo.' },
+    { title: 'Último paso del día ✅', body: 'Registrá tu cena y mirá cómo avanzan tus objetivos.' },
+  ],
+};

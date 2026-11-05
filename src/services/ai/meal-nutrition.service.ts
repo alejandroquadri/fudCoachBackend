@@ -1,3 +1,4 @@
+import { languageInstruction, Language } from './language';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { AiFoodLogPayload } from '../../types/logs.types';
 import { UsdaFood, UsdaFoodCandidate } from '../../types/nutrition.types';
@@ -136,7 +137,8 @@ export class MealNutritionService {
 
   async resolve(
     items: MealItem[],
-    context: AiCallContext
+    context: AiCallContext,
+    language?: Language | null
   ): Promise<MealNutritionResult> {
     if (!items.length)
       return {
@@ -166,7 +168,7 @@ export class MealNutritionService {
       'food_match',
       FoodMatchesSchema,
       [
-        new SystemMessage(FOOD_MATCH_PROMPT),
+        new SystemMessage(FOOD_MATCH_PROMPT + languageInstruction(language)),
         new HumanMessage(JSON.stringify(searches)),
       ],
       context

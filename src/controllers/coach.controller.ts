@@ -12,8 +12,16 @@ export class CoachController {
     }
   }
 
-  async getWelcomeMes(userId: string) {
-    const mes = `Hi! I'm your AI nutrition assistant 🤖🥗  
+  async getWelcomeMes(userId: string, language: 'en' | 'es' = 'en') {
+    const mes = language === 'es' ? `¡Hola! Soy tu asistente de nutrición con inteligencia artificial 🤖🥗
+
+Estoy disponible para acompañarte y ayudarte a alcanzar tus objetivos de nutrición. Podés compartir tus comidas por mensaje o foto: estimaré las calorías y los macronutrientes y los registraré. También podés registrar tu peso y seguir tu progreso en un gráfico.
+
+Puedo responder preguntas sobre nutrición y ayudarte con ideas de comidas según tus preferencias. También recordaré lo que te gusta y lo que no.
+
+Tené en cuenta que no soy profesional de la salud y que mis recomendaciones son orientaciones generales de bienestar. Para condiciones médicas o dietas terapéuticas, consultá con un profesional de la salud matriculado. Podés consultar mi metodología y mis fuentes con el botón de información arriba a la derecha.
+
+¿Empezamos? 💪` : `Hi! I'm your AI nutrition assistant 🤖🥗
 
 I’m here 24/7 to help you stay accountable and reach your nutrition goals. You can share your meals with me through text or photos — I’ll estimate their calories and macronutrients and log them for you. You can also record your weight, and I’ll create a clean, easy-to-read chart so you can track your progress.
 
@@ -40,7 +48,8 @@ Ready to get started? 💪`;
     message: string,
     userId: string,
     clientRequestId?: string,
-    timeZone?: string
+    timeZone?: string,
+    language?: 'en' | 'es'
   ): Promise<ChatMsg> {
     try {
       return await aiAgentService.respond({
@@ -48,6 +57,7 @@ Ready to get started? 💪`;
         userId,
         clientRequestId,
         timeZone,
+        language,
       });
     } catch (error) {
       if (error instanceof ContextBudgetError) throw error;
@@ -59,7 +69,8 @@ Ready to get started? 💪`;
     file: Express.Multer.File,
     userId: string,
     clientRequestId?: string,
-    caption?: string
+    caption?: string,
+    language?: 'en' | 'es'
   ): Promise<ChatMsg> {
     try {
       const processed = await sharp(file.buffer, {
@@ -78,6 +89,7 @@ Ready to get started? 💪`;
         userId,
         message: caption?.trim() || '[User uploaded an image]',
         clientRequestId,
+        language,
         image: {
           buffer: processed,
           mimeType: 'image/jpeg',

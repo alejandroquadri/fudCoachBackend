@@ -1,3 +1,4 @@
+import { languageFrom } from '../services/ai/language';
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { CoachController, toAiProfile, UserController } from '../controllers';
 import { FatSecretService } from './../services';
@@ -111,6 +112,7 @@ export class CoachRoutes {
           meal.name
         } (barcode ${barcode}).${note.trim() ? ` ${note.trim()}` : ''}`,
         barcodeMeal: meal,
+        language: languageFrom(req.header('X-App-Language')),
       });
       res.json(answer);
     } catch (error) {
@@ -137,7 +139,8 @@ export class CoachRoutes {
   ) => {
     try {
       const userId = this.authenticatedUserId(req);
-      const welcomeMes = await this.coachCtrl.getWelcomeMes(userId);
+      const user = req.user as UserProfile;
+      const welcomeMes = await this.coachCtrl.getWelcomeMes(userId, languageFrom(req.header('X-App-Language')) ?? user.language ?? 'en');
       res.status(200).json(welcomeMes);
     } catch (error) {
       next(error);
@@ -236,7 +239,8 @@ export class CoachRoutes {
         message,
         userId,
         typeof clientRequestId === 'string' ? clientRequestId : undefined,
-        typeof timeZone === 'string' ? timeZone : undefined
+        typeof timeZone === 'string' ? timeZone : undefined,
+        languageFrom(req.header('X-App-Language'))
       );
       res.status(200).json(answer);
     } catch (error: unknown) {
@@ -278,7 +282,8 @@ export class CoachRoutes {
         file,
         userId,
         clientRequestId,
-        typeof req.body.message === 'string' ? req.body.message : undefined
+        typeof req.body.message === 'string' ? req.body.message : undefined,
+        languageFrom(req.header('X-App-Language'))
       );
       res.status(200).json(answer);
     } catch (error: unknown) {

@@ -5,7 +5,9 @@ import {
   DAILY_PLANNER_MESSAGES,
   LUNCH_LOG_MESSAGES,
   DINNER_LOG_MESSAGES,
+  SPANISH_NOTIFICATION_MESSAGES,
 } from './notification-messages';
+import { UserModel } from '../models';
 
 export type NotificationKey =
   | 'dailyPlanner'
@@ -27,10 +29,11 @@ export const registerNotificationJobs = async () => {
     };
 
     const nc = new NotificationController();
+    const language = (await new UserModel().getUserById(userId))?.language;
 
     switch (key) {
       case 'dailyPlanner': {
-        const msg = pickRandom(DAILY_PLANNER_MESSAGES);
+        const msg = pickRandom(language === 'es' ? SPANISH_NOTIFICATION_MESSAGES.dailyPlanner : DAILY_PLANNER_MESSAGES);
         await nc.sendNotificationToUser(userId, {
           ...msg,
           data: { type: 'dailyPlanner' },
@@ -38,7 +41,7 @@ export const registerNotificationJobs = async () => {
         break;
       }
       case 'lunchLogReminder': {
-        const msg = pickRandom(LUNCH_LOG_MESSAGES);
+        const msg = pickRandom(language === 'es' ? SPANISH_NOTIFICATION_MESSAGES.lunchLogReminder : LUNCH_LOG_MESSAGES);
         await nc.sendNotificationToUser(userId, {
           ...msg,
           data: { type: 'lunchLogReminder' },
@@ -46,7 +49,7 @@ export const registerNotificationJobs = async () => {
         break;
       }
       case 'dinnerLogReminder': {
-        const msg = pickRandom(DINNER_LOG_MESSAGES);
+        const msg = pickRandom(language === 'es' ? SPANISH_NOTIFICATION_MESSAGES.dinnerLogReminder : DINNER_LOG_MESSAGES);
         await nc.sendNotificationToUser(userId, {
           ...msg,
           data: { type: 'dinnerLogReminder' },

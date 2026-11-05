@@ -1,3 +1,4 @@
+import type { Language } from '../services/ai/language';
 import { ObjectId } from 'mongodb';
 import { Entitlement } from './iap.types';
 import type { CoachMemory } from '../services/ai/coach-memory';
@@ -23,6 +24,7 @@ export interface UserProfile {
   activityLevel: string;
   triedOtherApps: boolean;
   unitType: 'metric' | 'imperial';
+  language?: Language;
   initWeight: number; // esto siempre lo voy a guardar en kg
   height: number; // esto siempre lo voy a guardar en cm
   birthdate: string; // un string del tipo YYYY-MM-DD

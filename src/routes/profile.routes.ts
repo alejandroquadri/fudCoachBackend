@@ -1,8 +1,10 @@
+import { languageFrom } from '../services/ai/language';
 import express, { NextFunction, Request, Response, Router } from 'express';
 import { UserController } from '../controllers/user.controller';
 import { UserProfile } from '../types';
 import { CoachMemoryModel } from '../models/coach-memory.model';
 import { MemoryEditSchema } from '../services/ai/coach-memory';
+import { UserModel } from '../models';
 
 export class ProfileRoutes {
   private router: Router = express.Router();
@@ -24,6 +26,20 @@ export class ProfileRoutes {
     this.router.post('/delete', this.deleteUser);
     this.router.get('/memory', this.getMemory);
     this.router.put('/memory', this.editMemory);
+    this.router.put('/language', this.updateLanguage);
+  };
+
+  private updateLanguage = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user as UserProfile;
+      if (!user._id) throw new Error('Authenticated user has no ID');
+      if (!languageFrom(req.body.language)) {
+        res.status(400).json({ message: 'Unsupported language' });
+        return;
+      }
+      await new UserModel().editUser({ _id: user._id, language: req.body.language });
+      res.json({ language: req.body.language });
+    } catch (error) { next(error); }
   };
 
   private test = (req: Request, res: Response) => res.send('Profile routes Ok');
