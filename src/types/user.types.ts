@@ -15,6 +15,7 @@ export interface UserProfile {
   appleSub?: string; // Apple's stable "sub" claim
   appleEmailPrivateRelay?: boolean; // optional flag
   appAccountToken: string;
+  grant?: boolean;
   entitlement?: Entitlement;
 
   gender: string;
@@ -53,6 +54,7 @@ export type RegistrationUserInput = Omit<
   | 'appleSub'
   | 'appleEmailPrivateRelay'
   | 'appAccountToken'
+  | 'grant'
   | 'entitlement'
   | 'deliveredWelcome'
 >;
@@ -110,6 +112,7 @@ export type AiProfile = Omit<
   | 'appleSub'
   | 'appleEmailPrivateRelay'
   | 'appAccountToken'
+  | 'grant'
   | 'entitlement'
 >;
 

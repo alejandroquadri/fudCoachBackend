@@ -48,6 +48,7 @@ test('excludes credentials and subscription data from model context', () => {
     email: 'alex@example.com',
     password: 'hash',
     appAccountToken: 'private-token',
+    grant: true,
     entitlement: { active: true },
     gender: 'male',
     lifeStyle: 1.2,
@@ -81,4 +82,5 @@ test('excludes credentials and subscription data from model context', () => {
   assert.equal('password' in profile, false);
   assert.equal('appAccountToken' in profile, false);
   assert.equal('entitlement' in profile, false);
+  assert.equal('grant' in profile, false);
 });

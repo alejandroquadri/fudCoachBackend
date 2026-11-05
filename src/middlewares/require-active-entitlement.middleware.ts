@@ -20,12 +20,13 @@ export const requireActiveEntitlement = (
   res: Response,
   next: NextFunction
 ) => {
-  const entitlement = (req.user as UserProfile | undefined)?.entitlement;
+  const user = req.user as UserProfile | undefined;
+  const entitlement = user?.entitlement;
   const active =
-    entitlement?.active === true &&
+    user?.grant === true || (entitlement?.active === true &&
     (entitlement.grant
       ? hasValidGrant(entitlement)
-      : hasUnexpiredStoreAccess(entitlement));
+      : hasUnexpiredStoreAccess(entitlement)));
 
   if (!active) {
     return res.status(403).json({

@@ -92,6 +92,19 @@ export class IapController {
     const userId = this.requireUserId(user);
     const stored = user.entitlement;
 
+    if (user.grant === true) {
+      return {
+        ok: true,
+        appAccountToken: user.appAccountToken,
+        entitlement: {
+          active: true,
+          productId: 'manual',
+          originalTransactionId: 'manual',
+          platform: 'ios',
+        },
+      };
+    }
+
     if (!stored) return { ok: true, appAccountToken: user.appAccountToken };
 
     const grant = stored.grant;

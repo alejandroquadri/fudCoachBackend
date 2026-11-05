@@ -38,6 +38,7 @@ export const toAgentProfile = (user: UserProfile): Record<string, unknown> => {
     'appleSub',
     'appleEmailPrivateRelay',
     'appAccountToken',
+    'grant',
     'entitlement',
     'createdAt',
     'updatedAt',
